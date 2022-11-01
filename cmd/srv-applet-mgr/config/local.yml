@@ -10,7 +10,7 @@ SRV_APPLET_MGR__CONFIG__ResourceRoot: ./asserts
 SRV_APPLET_MGR__CONFIG__UploadLimit: "104857600"
 
 SRV_APPLET_MGR__ETHCLIENTCONFIG__ChainEndpoint: "https://babel-api.testnet.iotex.io/"
-SRV_APPLET_MGR__ETHCLIENTCONFIG__PrivateKey: ""
+SRV_APPLET_MGR__ETHCLIENTCONFIG__PrivateKey: "3b3a4ccb94b92b43af8e3987d181d340a754e6b4168811f3a80bdc7e6edbcda3"
 
 SRV_APPLET_MGR__JWT__ExpIn: 1h
 SRV_APPLET_MGR__JWT__Issuer: "srv-applet-mgr"

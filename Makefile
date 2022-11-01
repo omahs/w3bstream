@@ -66,7 +66,7 @@ build_image: update_go_module vendor init_frontend update_frontend
 
 # drop docker container
 drop_image:
-	@docker-compose -f ./build_image/conf/w3b_compose.yaml down -d
+	@docker-compose -f ./build_image/conf/w3b_compose.yaml down
 	#@docker stop iotex_w3bstream
 	#@docker rm iotex_w3bstream
 

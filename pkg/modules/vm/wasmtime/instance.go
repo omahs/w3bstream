@@ -20,7 +20,11 @@ import (
 	"github.com/iotexproject/w3bstream/pkg/types/wasm"
 )
 
-func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte) (*Instance, error) {
+func NewInstanceByCode(ctx context.Context,
+	projectID types.SFID,
+	instanceID types.SFID,
+	code []byte,
+) (*Instance, error) {
 	l := types.MustLoggerFromContext(ctx)
 
 	_, l = l.Start(ctx, "NewInstanceByCode")
@@ -48,11 +52,20 @@ func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte) (*Instan
 		}
 	}
 
+	instance := &Instance{
+		projectID:  projectID, // TODO: pointer to the project it belongs to
+		instanceID: instanceID,
+		state:      enums.INSTANCE_STATE__CREATED,
+		vmEngine:   vmEngine,
+		vmStore:    vmStore,
+		res:        res,
+		handlers:   make(map[string]*wasmtime.Func),
+		db:         db,
+	}
+
 	ef := ExportFuncs{
-		store: vmStore,
-		res:   res,
-		db:    db,
-		cl:    cl,
+		instance: instance,
+		cl:       cl,
 		logger: types.MustLoggerFromContext(ctx).WithValues(
 			"@src", "wasm",
 			"@namespace", types.MustProjectFromContext(ctx).Name,
@@ -72,32 +85,24 @@ func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte) (*Instan
 	wasiConfig := wasmtime.NewWasiConfig()
 	vmStore.SetWasi(wasiConfig)
 
-	vmModule, err := wasmtime.NewModule(vmEngine, code)
+	var err error
+	instance.vmModule, err = wasmtime.NewModule(vmEngine, code)
 	if err != nil {
 		l.Error(err)
 		return nil, err
 	}
-	vmInstance, err := linker.Instantiate(vmStore, vmModule)
+	instance.vmInstance, err = linker.Instantiate(vmStore, instance.vmModule)
 	if err != nil {
 		l.Error(err)
 		return nil, err
 	}
 
-	return &Instance{
-		id:         id,
-		state:      enums.INSTANCE_STATE__CREATED,
-		vmEngine:   vmEngine,
-		vmStore:    vmStore,
-		vmModule:   vmModule,
-		vmInstance: vmInstance,
-		res:        res,
-		handlers:   make(map[string]*wasmtime.Func),
-		db:         db,
-	}, nil
+	return instance, nil
 }
 
 type Instance struct {
-	id         types.SFID
+	projectID  types.SFID
+	instanceID types.SFID
 	state      wasm.InstanceState
 	vmEngine   *wasmtime.Engine
 	vmStore    *wasmtime.Store
@@ -110,7 +115,7 @@ type Instance struct {
 
 var _ wasm.Instance = (*Instance)(nil)
 
-func (i *Instance) ID() string { return i.id.String() }
+func (i *Instance) ID() string { return i.instanceID.String() }
 
 func (i *Instance) Start(ctx context.Context) error {
 	log.FromContext(ctx).WithValues("instance", i.ID()).Info("started")
@@ -129,7 +134,7 @@ func (i *Instance) State() wasm.InstanceState { return i.state }
 func (i *Instance) HandleEvent(ctx context.Context, fn string, data []byte) *wasm.EventHandleResult {
 	if i.state != enums.INSTANCE_STATE__STARTED {
 		return &wasm.EventHandleResult{
-			InstanceID: i.id.String(),
+			InstanceID: i.instanceID.String(),
 			Code:       wasm.ResultStatusCode_Failed,
 			ErrMsg:     "instance not running",
 		}
@@ -154,7 +159,7 @@ func (i *Instance) Handle(ctx context.Context, t *Task) *wasm.EventHandleResult 
 		hdl = i.vmInstance.GetFunc(i.vmStore, t.Handler)
 		if hdl == nil {
 			return &wasm.EventHandleResult{
-				InstanceID: i.id.String(),
+				InstanceID: i.instanceID.String(),
 				ErrMsg:     "handler not exists",
 				Code:       wasm.ResultStatusCode_UnexportedHandler,
 			}
@@ -168,14 +173,14 @@ func (i *Instance) Handle(ctx context.Context, t *Task) *wasm.EventHandleResult 
 	if err != nil {
 		l.Error(err)
 		return &wasm.EventHandleResult{
-			InstanceID: i.id.String(),
+			InstanceID: i.instanceID.String(),
 			ErrMsg:     err.Error(),
 			Code:       wasm.ResultStatusCode_Failed,
 		}
 	}
 
 	return &wasm.EventHandleResult{
-		InstanceID: i.id.String(),
+		InstanceID: i.instanceID.String(),
 		Code:       wasm.ResultStatusCode(result.(int32)),
 	}
 }

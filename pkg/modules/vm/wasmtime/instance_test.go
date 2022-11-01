@@ -78,7 +78,7 @@ func init() {
 }
 
 func TestInstance_LogWASM(t *testing.T) {
-	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), wasmLogCode)
+	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), idg.MustGenSFID(), wasmLogCode)
 	NewWithT(t).Expect(err).To(BeNil())
 	id := vm.AddInstance(ctx, i)
 
@@ -95,7 +95,7 @@ func TestInstance_LogWASM(t *testing.T) {
 }
 
 func TestInstance_GJsonWASM(t *testing.T) {
-	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), wasmGJsonCode)
+	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), idg.MustGenSFID(), wasmGJsonCode)
 	NewWithT(t).Expect(err).To(BeNil())
 	id := vm.AddInstance(ctx, i)
 
@@ -145,7 +145,7 @@ func TestInstance_GJsonWASM(t *testing.T) {
 }
 
 func TestInstance_EasyJsonWASM(t *testing.T) {
-	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), wasmEasyJsonCode)
+	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), idg.MustGenSFID(), wasmEasyJsonCode)
 	NewWithT(t).Expect(err).To(BeNil())
 	id := vm.AddInstance(ctx, i)
 
@@ -167,7 +167,7 @@ func TestInstance_EasyJsonWASM(t *testing.T) {
 }
 
 func TestInstance_WordCount(t *testing.T) {
-	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), wasmWordCountCode)
+	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), idg.MustGenSFID(), wasmWordCountCode)
 	NewWithT(t).Expect(err).To(BeNil())
 	id := vm.AddInstance(ctx, i)
 
@@ -193,7 +193,7 @@ func TestInstance_WordCount(t *testing.T) {
 }
 
 func TestInstance_WordCountV2(t *testing.T) {
-	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), wasmWordCountV2Code)
+	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), idg.MustGenSFID(), wasmWordCountV2Code)
 	NewWithT(t).Expect(err).To(BeNil())
 	id := vm.AddInstance(ctx, i)
 
@@ -222,7 +222,7 @@ func TestInstance_WordCountV2(t *testing.T) {
 }
 
 func TestInstance_TokenDistribute(t *testing.T) {
-	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), wasmTokenDistributeCode)
+	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), idg.MustGenSFID(), wasmTokenDistributeCode)
 	NewWithT(t).Expect(err).To(BeNil())
 	id := vm.AddInstance(ctx, i)
 

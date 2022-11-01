@@ -1,11 +1,15 @@
 package wasmtime
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/ethereum/go-ethereum"
@@ -14,10 +18,11 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	conflog "github.com/iotexproject/Bumblebee/conf/log"
-	"github.com/iotexproject/Bumblebee/x/mapx"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 
+	"github.com/iotexproject/w3bstream/pkg/models"
+	"github.com/iotexproject/w3bstream/pkg/modules/httpclient"
 	"github.com/iotexproject/w3bstream/pkg/types/wasm"
 )
 
@@ -31,11 +36,9 @@ const (
 
 type (
 	ExportFuncs struct {
-		store  *wasmtime.Store
-		res    *mapx.Map[uint32, []byte]
-		db     map[string][]byte
-		logger conflog.Logger
-		cl     *ChainClient
+		instance *Instance
+		logger   conflog.Logger
+		cl       *ChainClient
 	}
 
 	ChainClient struct {
@@ -45,7 +48,7 @@ type (
 )
 
 func (ef *ExportFuncs) Log(c *wasmtime.Caller, logLevel, ptr, size int32) int32 {
-	membuf := c.GetExport("memory").Memory().UnsafeData(ef.store)
+	membuf := c.GetExport("memory").Memory().UnsafeData(ef.instance.vmStore)
 	buf, err := read(membuf, ptr, size)
 	if err != nil {
 		ef.logger.Error(err)
@@ -69,7 +72,7 @@ func (ef *ExportFuncs) Log(c *wasmtime.Caller, logLevel, ptr, size int32) int32 
 }
 
 func (ef *ExportFuncs) GetData(c *wasmtime.Caller, rid, vmAddrPtr, vmSizePtr int32) int32 {
-	data, ok := ef.res.Load(uint32(rid))
+	data, ok := ef.instance.res.Load(uint32(rid))
 	if !ok {
 		return int32(wasm.ResultStatusCode_ResourceNotFound)
 	}
@@ -88,14 +91,14 @@ func (ef *ExportFuncs) copyDataIntoWasm(c *wasmtime.Caller, data []byte, vmAddrP
 		return errors.New("alloc is nil")
 	}
 	size := len(data)
-	result, err := allocFn.Func().Call(ef.store, int32(size))
+	result, err := allocFn.Func().Call(ef.instance.vmStore, int32(size))
 	if err != nil {
 		return err
 	}
 
 	addr := result.(int32)
 
-	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.store)
+	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.instance.vmStore)
 	if siz := copy(memBuf[addr:], data); siz != size {
 		return errors.New("fail to copy data")
 	}
@@ -117,7 +120,7 @@ func (ef *ExportFuncs) copyDataIntoWasm(c *wasmtime.Caller, data []byte, vmAddrP
 
 // TODO SetData if rid not exist, should be assigned by wasm?
 func (ef *ExportFuncs) SetData(c *wasmtime.Caller, rid, addr, size int32) int32 {
-	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.store)
+	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.instance.vmStore)
 	if addr > int32(len(memBuf)) || addr+size > int32(len(memBuf)) {
 		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
 	}
@@ -126,12 +129,12 @@ func (ef *ExportFuncs) SetData(c *wasmtime.Caller, rid, addr, size int32) int32 
 		ef.logger.Error(err)
 		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
 	}
-	ef.res.Store(uint32(rid), buf)
+	ef.instance.res.Store(uint32(rid), buf)
 	return int32(wasm.ResultStatusCode_OK)
 }
 
 func (ef *ExportFuncs) SetDB(c *wasmtime.Caller, kAddr, kSize, vAddr, vSize int32) int32 {
-	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.store)
+	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.instance.vmStore)
 	key, err := read(memBuf, kAddr, kSize)
 	if err != nil {
 		ef.logger.Error(err)
@@ -148,20 +151,20 @@ func (ef *ExportFuncs) SetDB(c *wasmtime.Caller, kAddr, kSize, vAddr, vSize int3
 		"val", string(value),
 	).Info("host.SetDB")
 
-	ef.db[string(key)] = value
+	ef.instance.db[string(key)] = value
 	return int32(wasm.ResultStatusCode_OK)
 }
 
 func (ef *ExportFuncs) GetDB(c *wasmtime.Caller,
 	kAddr, kSize int32, vmAddrPtr, vmSizePtr int32) int32 {
-	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.store)
+	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.instance.vmStore)
 	key, err := read(memBuf, kAddr, kSize)
 	if err != nil {
 		ef.logger.Error(err)
 		return int32(wasm.ResultStatusCode_ResourceNotFound)
 	}
 
-	val, exist := ef.db[string(key)]
+	val, exist := ef.instance.db[string(key)]
 	if !exist || val == nil {
 		return int32(wasm.ResultStatusCode_ResourceNotFound)
 	}
@@ -181,7 +184,11 @@ func (ef *ExportFuncs) GetDB(c *wasmtime.Caller,
 
 // TODO: add chainID in sendtx abi
 // TODO: make sendTX async, and add callback if possible
-func (ef *ExportFuncs) SendTX(c *wasmtime.Caller, offset, size int32) int32 {
+func (ef *ExportFuncs) SendTX(c *wasmtime.Caller,
+	chainID, payloadOffset, payloadSize int32,
+	onSuccessEventTypeAddr, onSuccessEventTypeSize int32,
+	onFailureEventTypeAddr, onFailureEventTypeSize int32,
+	hashAddrPtr, hashSizePtr int32) int32 {
 	if ef.cl == nil {
 		ef.logger.Error(errors.New("eth client doesn't exist"))
 		return wasm.ResultStatusCode_Failed
@@ -190,8 +197,8 @@ func (ef *ExportFuncs) SendTX(c *wasmtime.Caller, offset, size int32) int32 {
 		ef.logger.Error(errors.New("private key is empty"))
 		return wasm.ResultStatusCode_Failed
 	}
-	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.store)
-	buf, err := read(memBuf, offset, size)
+	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.instance.vmStore)
+	buf, err := read(memBuf, payloadOffset, payloadSize)
 	if err != nil {
 		ef.logger.Error(err)
 		return wasm.ResultStatusCode_Failed
@@ -203,7 +210,26 @@ func (ef *ExportFuncs) SendTX(c *wasmtime.Caller, offset, size int32) int32 {
 		ef.logger.Error(err)
 		return wasm.ResultStatusCode_Failed
 	}
+	if err := ef.copyDataIntoWasm(c, []byte(txHash), hashAddrPtr, hashSizePtr); err != nil {
+		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
+	}
 	ef.logger.Info("tx hash: %s", txHash)
+	if onSuccessEventTypeSize > 0 || onFailureEventTypeSize > 0 {
+		successEventType, err := read(memBuf, onSuccessEventTypeAddr, onSuccessEventTypeSize)
+		if err != nil {
+			ef.logger.Error(err)
+			return wasm.ResultStatusCode_Failed
+		}
+		failureEventType, err := read(memBuf, onFailureEventTypeAddr, onFailureEventTypeSize)
+		if err != nil {
+			ef.logger.Error(err)
+			return wasm.ResultStatusCode_Failed
+		}
+		if err := ef.monitorTx(uint64(chainID), txHash, string(successEventType), string(failureEventType)); err != nil {
+			ef.logger.Error(err)
+			return wasm.ResultStatusCode_Failed
+		}
+	}
 	return int32(wasm.ResultStatusCode_OK)
 }
 
@@ -269,8 +295,36 @@ func sendETHTx(cl *ChainClient, toStr string, valueStr string, dataStr string) (
 	return signedTx.Hash().Hex(), nil
 }
 
+func (ef *ExportFuncs) monitorTx(chainID uint64, txHash string,
+	successEventType string, failureEventType string) error {
+	monitorReq := models.CreateMonitorReq2{
+		Chaintx: &models.ChaintxInfo{
+			ChainID:   chainID,
+			EventType: successEventType,
+			TxAddress: txHash,
+		},
+	}
+	body, err := json.Marshal(monitorReq)
+	if err != nil {
+		return err
+	}
+	url := fmt.Sprintf("http://localhost:8888/srv-applet-mgr/v0/monitor/%s", ef.instance.projectID) // TODO move to config
+	httpReq, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	cli := httpclient.NewClient()
+	_, err = cli.Send(httpReq)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (ef *ExportFuncs) CallContract(c *wasmtime.Caller,
-	offset, size int32, vmAddrPtr, vmSizePtr int32) int32 {
+	chainID, offset, size int32, vmAddrPtr, vmSizePtr int32) int32 {
 	if ef.cl == nil {
 		ef.logger.Error(errors.New("eth client doesn't exist"))
 		return wasm.ResultStatusCode_Failed
@@ -279,7 +333,7 @@ func (ef *ExportFuncs) CallContract(c *wasmtime.Caller,
 		ef.logger.Error(errors.New("private key is empty"))
 		return wasm.ResultStatusCode_Failed
 	}
-	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.store)
+	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.instance.vmStore)
 	buf, err := read(memBuf, offset, size)
 	if err != nil {
 		ef.logger.Error(err)
@@ -322,6 +376,9 @@ func putUint32Le(buf []byte, addr int32, num uint32) error {
 }
 
 func read(memBuf []byte, addr int32, size int32) ([]byte, error) {
+	if size == 0 {
+		return []byte{}, nil
+	}
 	if addr > int32(len(memBuf)) || addr+size > int32(len(memBuf)) {
 		return nil, errors.New("overflow")
 	}

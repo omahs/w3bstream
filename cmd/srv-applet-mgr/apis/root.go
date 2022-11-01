@@ -32,6 +32,7 @@ func init() {
 	RouterV0.Register(login.Root)
 	RouterV0.Register(event.Root)
 	RouterV0.Register(RouterAuth)
+	RouterV0.Register(monitor.Root)
 	{
 		RouterAuth.Register(account.Root)
 		RouterAuth.Register(project.Root)
@@ -39,6 +40,5 @@ func init() {
 		RouterAuth.Register(deploy.Root)
 		RouterAuth.Register(publisher.Root)
 		RouterAuth.Register(strategy.Root)
-		RouterAuth.Register(monitor.Root)
 	}
 }

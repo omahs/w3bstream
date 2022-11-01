@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"context"
+	"fmt"
 
 	confid "github.com/iotexproject/Bumblebee/conf/id"
 	"github.com/iotexproject/Bumblebee/conf/log"
@@ -68,7 +69,8 @@ func createChainTx(d sqlx.DBExecutor, projectName string, r *CreateChaintxReq, i
 	}
 
 	n := *r
-	n.EventType = enums.EVENTTYPEDEFAULT // TODO support event type
+	// n.EventType = enums.EVENTTYPEDEFAULT // TODO support event type
+	fmt.Println("DEBUG EVENTTYPE", n.EventType)
 	m := &models.Chaintx{
 		RelChaintx: models.RelChaintx{ChaintxID: idg.MustGenSFID()},
 		ChaintxData: models.ChaintxData{

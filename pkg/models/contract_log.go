@@ -38,3 +38,9 @@ type ContractlogInfo struct {
 	Topic2          string `db:"f_topic2,default=''"            json:"topic2,omitempty"`
 	Topic3          string `db:"f_topic3,default=''"            json:"topic3,omitempty"`
 }
+
+type CreateMonitorReq2 struct {
+	Contractlog *ContractlogInfo `json:"contractLog,omitempty"`
+	Chaintx     *ChaintxInfo     `json:"chainTx,omitempty"`
+	ChainHeight *ChainHeightInfo `json:"chainHeight,omitempty"`
+}

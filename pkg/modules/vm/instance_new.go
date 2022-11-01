@@ -19,7 +19,8 @@ func NewInstance(ctx context.Context, path string, id types.SFID) error {
 		l.Error(err)
 		return err
 	}
-	i, err := wasmtime.NewInstanceByCode(ctx, id, code)
+	proj := types.MustProjectFromContext(ctx)
+	i, err := wasmtime.NewInstanceByCode(ctx, proj.ProjectID, id, code)
 	if err != nil {
 		l.Error(err)
 		return err
