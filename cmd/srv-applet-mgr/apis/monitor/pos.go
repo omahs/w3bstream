@@ -5,14 +5,14 @@ import (
 
 	"github.com/machinefi/w3bstream/cmd/srv-applet-mgr/apis/middleware"
 	"github.com/machinefi/w3bstream/pkg/depends/kit/httptransport/httpx"
-	"github.com/machinefi/w3bstream/pkg/modules/blockchain"
+	"github.com/machinefi/w3bstream/pkg/modules/monitor"
 	"github.com/machinefi/w3bstream/pkg/types"
 )
 
 type CreateMonitor struct {
 	httpx.MethodPost
-	ProjectID                   types.SFID `in:"path" name:"projectID"`
-	blockchain.CreateMonitorReq `in:"body"`
+	ProjectID                types.SFID `in:"path" name:"projectID"`
+	monitor.CreateMonitorReq `in:"body"`
 }
 
 func (r *CreateMonitor) Path() string { return "/:projectID" }
@@ -23,5 +23,5 @@ func (r *CreateMonitor) Output(ctx context.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return blockchain.CreateMonitor(ctx, p.Name, &r.CreateMonitorReq)
+	return monitor.CreateMonitor(ctx, p, &r.CreateMonitorReq)
 }
