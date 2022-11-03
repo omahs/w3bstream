@@ -36,8 +36,9 @@ func CreateMonitor(ctx context.Context, project *models.Project, r *CreateMonito
 		return nil, err
 	}
 
+	id := idg.MustGenSFID()
 	m := &models.Monitor{
-		RelMonitor: models.RelMonitor{MonitorID: idg.MustGenSFID()},
+		RelMonitor: models.RelMonitor{MonitorID: id},
 		RelProject: models.RelProject{ProjectID: project.ProjectID},
 		MonitorData: models.MonitorData{
 			State: enums.MONITOR_STATE__SYNCING,
@@ -53,7 +54,7 @@ func CreateMonitor(ctx context.Context, project *models.Project, r *CreateMonito
 		l.Error(err)
 		return nil, status.CheckDatabaseError(err, "CreateMonitor")
 	}
-	if _, err := blockchain.CreateMonitor(ctx, project.Name, &blockchain.CreateMonitorReq{
+	if _, err := blockchain.CreateMonitor(ctx, id, project.Name, &blockchain.CreateMonitorReq{
 		Contractlog: r.Contractlog,
 		Chaintx:     r.Chaintx,
 		ChainHeight: r.ChainHeight,

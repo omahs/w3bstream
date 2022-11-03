@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	confid "github.com/machinefi/w3bstream/pkg/depends/conf/id"
 	"github.com/machinefi/w3bstream/pkg/depends/conf/log"
 	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx"
 	"github.com/machinefi/w3bstream/pkg/enums"
@@ -26,22 +25,21 @@ type (
 	CreateChainHeightReq = models.ChainHeightInfo
 )
 
-func CreateMonitor(ctx context.Context, projectName string, r *CreateMonitorReq) (interface{}, error) {
+func CreateMonitor(ctx context.Context, id types.SFID, projectName string, r *CreateMonitorReq) (interface{}, error) {
 	d := types.MustMonitorDBExecutorFromContext(ctx)
-	idg := confid.MustSFIDGeneratorFromContext(ctx)
 	switch {
 	case r.Contractlog != nil:
-		return createContractLog(d, projectName, r.Contractlog, idg)
+		return createContractLog(d, id, projectName, r.Contractlog)
 	case r.Chaintx != nil:
-		return createChainTx(d, projectName, r.Chaintx, idg)
+		return createChainTx(d, id, projectName, r.Chaintx)
 	case r.ChainHeight != nil:
-		return createChainHeight(d, projectName, r.ChainHeight, idg)
+		return createChainHeight(d, id, projectName, r.ChainHeight)
 	default:
 		return nil, status.BadRequest
 	}
 }
 
-func createContractLog(d sqlx.DBExecutor, projectName string, r *CreateContractlogReq, idg confid.SFIDGenerator) (*models.Contractlog, error) {
+func createContractLog(d sqlx.DBExecutor, id types.SFID, projectName string, r *CreateContractlogReq) (*models.Contractlog, error) {
 	if err := checkChainID(d, r.ChainID); err != nil {
 		return nil, err
 	}
@@ -50,7 +48,7 @@ func createContractLog(d sqlx.DBExecutor, projectName string, r *CreateContractl
 	n.BlockCurrent = n.BlockStart
 	n.EventType = getEventType(n.EventType)
 	m := &models.Contractlog{
-		RelContractlog: models.RelContractlog{ContractlogID: idg.MustGenSFID()},
+		RelContractlog: models.RelContractlog{ContractlogID: id},
 		ContractlogData: models.ContractlogData{
 			ProjectName:     projectName,
 			ContractlogInfo: n,
@@ -62,7 +60,7 @@ func createContractLog(d sqlx.DBExecutor, projectName string, r *CreateContractl
 	return m, nil
 }
 
-func createChainTx(d sqlx.DBExecutor, projectName string, r *CreateChaintxReq, idg confid.SFIDGenerator) (*models.Chaintx, error) {
+func createChainTx(d sqlx.DBExecutor, id types.SFID, projectName string, r *CreateChaintxReq) (*models.Chaintx, error) {
 	if err := checkChainID(d, r.ChainID); err != nil {
 		return nil, err
 	}
@@ -70,7 +68,7 @@ func createChainTx(d sqlx.DBExecutor, projectName string, r *CreateChaintxReq, i
 	n := *r
 	n.EventType = getEventType(n.EventType)
 	m := &models.Chaintx{
-		RelChaintx: models.RelChaintx{ChaintxID: idg.MustGenSFID()},
+		RelChaintx: models.RelChaintx{ChaintxID: id},
 		ChaintxData: models.ChaintxData{
 			ProjectName: projectName,
 			ChaintxInfo: n,
@@ -82,7 +80,7 @@ func createChainTx(d sqlx.DBExecutor, projectName string, r *CreateChaintxReq, i
 	return m, nil
 }
 
-func createChainHeight(d sqlx.DBExecutor, projectName string, r *CreateChainHeightReq, idg confid.SFIDGenerator) (*models.ChainHeight, error) {
+func createChainHeight(d sqlx.DBExecutor, id types.SFID, projectName string, r *CreateChainHeightReq) (*models.ChainHeight, error) {
 	if err := checkChainID(d, r.ChainID); err != nil {
 		return nil, err
 	}
@@ -90,7 +88,7 @@ func createChainHeight(d sqlx.DBExecutor, projectName string, r *CreateChainHeig
 	n := *r
 	n.EventType = getEventType(n.EventType)
 	m := &models.ChainHeight{
-		RelChainHeight: models.RelChainHeight{ChainHeightID: idg.MustGenSFID()},
+		RelChainHeight: models.RelChainHeight{ChainHeightID: id},
 		ChainHeightData: models.ChainHeightData{
 			ProjectName:     projectName,
 			ChainHeightInfo: n,
