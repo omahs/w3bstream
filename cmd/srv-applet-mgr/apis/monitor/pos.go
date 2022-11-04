@@ -23,5 +23,5 @@ func (r *CreateMonitor) Output(ctx context.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return monitor.CreateMonitor(ctx, p, &r.CreateMonitorReq)
+	return monitor.New(ctx, p, &r.CreateMonitorReq)
 }

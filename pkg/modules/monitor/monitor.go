@@ -23,7 +23,7 @@ type (
 	CreateChainHeightReq = models.ChainHeightInfo
 )
 
-func CreateMonitor(ctx context.Context, project *models.Project, r *CreateMonitorReq) (interface{}, error) {
+func New(ctx context.Context, project *models.Project, r *CreateMonitorReq) (interface{}, error) {
 	d := types.MustDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	idg := confid.MustSFIDGeneratorFromContext(ctx)
