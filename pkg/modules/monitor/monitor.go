@@ -19,7 +19,7 @@ type (
 	CreateMonitorReq = models.MonitorInfo
 )
 
-func Create(ctx context.Context, project *models.Project, r *CreateMonitorReq) (interface{}, error) {
+func Create(ctx context.Context, project *models.Project, r *CreateMonitorReq) (*models.Monitor, error) {
 	d := types.MustDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	idg := confid.MustSFIDGeneratorFromContext(ctx)
