@@ -23,6 +23,10 @@ func ParseMonitorStateFromString(s string) (MonitorState, error) {
 		return MONITOR_STATE__SYNCING, nil
 	case "SYNCED":
 		return MONITOR_STATE__SYNCED, nil
+	case "FAILED_UNKNOWN":
+		return MONITOR_STATE__FAILED_UNKNOWN, nil
+	case "FAILED_CONFLICT":
+		return MONITOR_STATE__FAILED_CONFLICT, nil
 	}
 }
 
@@ -36,6 +40,10 @@ func ParseMonitorStateFromLabel(s string) (MonitorState, error) {
 		return MONITOR_STATE__SYNCING, nil
 	case "SYNCED":
 		return MONITOR_STATE__SYNCED, nil
+	case "FAILED_UNKNOWN":
+		return MONITOR_STATE__FAILED_UNKNOWN, nil
+	case "FAILED_CONFLICT":
+		return MONITOR_STATE__FAILED_CONFLICT, nil
 	}
 }
 
@@ -53,6 +61,10 @@ func (v MonitorState) String() string {
 		return "SYNCING"
 	case MONITOR_STATE__SYNCED:
 		return "SYNCED"
+	case MONITOR_STATE__FAILED_UNKNOWN:
+		return "FAILED_UNKNOWN"
+	case MONITOR_STATE__FAILED_CONFLICT:
+		return "FAILED_CONFLICT"
 	}
 }
 
@@ -66,6 +78,10 @@ func (v MonitorState) Label() string {
 		return "SYNCING"
 	case MONITOR_STATE__SYNCED:
 		return "SYNCED"
+	case MONITOR_STATE__FAILED_UNKNOWN:
+		return "FAILED_UNKNOWN"
+	case MONITOR_STATE__FAILED_CONFLICT:
+		return "FAILED_CONFLICT"
 	}
 }
 
@@ -74,7 +90,7 @@ func (v MonitorState) TypeName() string {
 }
 
 func (v MonitorState) ConstValues() []enum.IntStringerEnum {
-	return []enum.IntStringerEnum{MONITOR_STATE__SYNCING, MONITOR_STATE__SYNCED}
+	return []enum.IntStringerEnum{MONITOR_STATE__SYNCING, MONITOR_STATE__SYNCED, MONITOR_STATE__FAILED_UNKNOWN, MONITOR_STATE__FAILED_CONFLICT}
 }
 
 func (v MonitorState) MarshalText() ([]byte, error) {

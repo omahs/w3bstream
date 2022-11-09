@@ -4,11 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/machinefi/w3bstream/pkg/enums"
 	"github.com/machinefi/w3bstream/pkg/errors/status"
 	"github.com/machinefi/w3bstream/pkg/models"
 	"github.com/machinefi/w3bstream/pkg/types"
-	"github.com/pkg/errors"
 )
 
 const (
