@@ -8,6 +8,7 @@ import (
 // ChainHeight database model chainheight
 // @def primary                   ID
 // @def unique_index UI_chain_height_id   ChainHeightID
+// @def unique_index UI_chain_height_uniq ProjectName EventType ChainID Height Uniq
 //
 //go:generate toolkit gen model ChainHeight --database MonitorDB
 type ChainHeight struct {
@@ -22,8 +23,9 @@ type RelChainHeight struct {
 }
 
 type ChainHeightData struct {
-	ProjectName string `db:"f_project_name"                 json:"projectName"`
-	Finished    bool   `db:"f_finished,default='false'"     json:"finished,omitempty"`
+	ProjectName string         `db:"f_project_name"                 json:"projectName"`
+	Finished    datatypes.Bool `db:"f_finished,default='2'"         json:"-"`
+	Uniq        types.SFID     `db:"f_uniq,default='0'"             json:"-"`
 	ChainHeightInfo
 }
 

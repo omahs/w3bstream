@@ -32,8 +32,8 @@ type MonitorData struct {
 
 type MonitorInfo struct {
 	Type        enums.MonitorType `json:"type,omitempty"`
-	ChainTx     *ChaintxInfo      `json:"chainTx,omitempty"`
-	ContractLog *ContractlogInfo  `json:"contractLog,omitempty"`
+	ChainTx     *ChainTxInfo      `json:"chainTx,omitempty"`
+	ContractLog *ContractLogInfo  `json:"contractLog,omitempty"`
 	ChainHeight *ChainHeightInfo  `json:"chainHeight,omitempty"`
 }
 
