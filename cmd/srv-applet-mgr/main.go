@@ -14,6 +14,7 @@ import (
 	"github.com/machinefi/w3bstream/pkg/modules/blockchain"
 	"github.com/machinefi/w3bstream/pkg/modules/deploy"
 	"github.com/machinefi/w3bstream/pkg/modules/event"
+	"github.com/machinefi/w3bstream/pkg/modules/monitor"
 	"github.com/machinefi/w3bstream/pkg/modules/project"
 	"github.com/machinefi/w3bstream/pkg/types"
 )
@@ -80,6 +81,9 @@ func main() {
 			},
 			func() {
 				blockchain.Monitor(global.WithContext(context.Background()))
+			},
+			func() {
+				monitor.Sync(global.WithContext(context.Background()))
 			},
 		)
 	})
