@@ -2,7 +2,7 @@ version: "3.6"
 
 services:
   w3bapp:
-    image: ${WS_BACKEND_IMAGE:-ghcr.io/machinefi/w3bstream:main}
+    image: ${WS_BACKEND_IMAGE:-ghcr.io/machinefi/w3bstream:stable}
     depends_on:
       - "postgres"
       - "mqtt_server"
@@ -24,7 +24,7 @@ services:
       - ${WS_WORKING_DIR:-.}/asserts:/w3bstream/asserts
 
   w3bstream-studio:
-    image: ${WS_STUDIO_IMAGE:-ghcr.io/machinefi/w3bstream-studio:main}
+    image: ${WS_STUDIO_IMAGE:-ghcr.io/machinefi/w3bstream-studio:stable}
     container_name: w3bstream-studio
     restart: always
     working_dir: /w3bstream-studio
@@ -43,6 +43,8 @@ services:
     image: eclipse-mosquitto:1.6.15
     container_name: mosquitto
     restart: always
+    ports:
+      - "1883:1883"
     volumes:
       - ${WS_WORKING_DIR:-.}/mqtt:/mosquitto/data
 

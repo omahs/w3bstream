@@ -88,7 +88,7 @@ upload wasm script
 export PROJECTID=${project_id}
 export PROJECTNAME=${project_name}
 export WASMFILE=_examples/log/log.wasm
-http --form post :8888/srv-applet-mgr/v0/applet/$PROJECTID file@$WASMFILE info='{"appletName":"log","strategies":[{"eventType":"DEFAULT","handler":"start"}]}' -A bearer -a $TOK
+http --form post :8888/srv-applet-mgr/v0/applet/$PROJECTID file@$WASMFILE info='{"appletName":"log","wasmName":"log.wasm","strategies":[{"eventType":"DEFAULT","handler":"start"}]}' -A bearer -a $TOK
 ```
 
 output like
@@ -246,7 +246,7 @@ server log like
 ### Post blockchain contract event log monitor
 
 ```sh
-echo '{"contractLog":{"eventType": "DEFAULT", "chainID": 4690, "contractAddress": "${contractAddress}","blockStart": ${blockStart},"blockEnd": ${blockEnd},"topic0":"${topic0}"}}' | http :8888/srv-applet-mgr/v0/monitor/$PROJECTID -A bearer -a $TOK
+echo '{"eventType": "DEFAULT", "chainID": 4690, "contractAddress": "${contractAddress}","blockStart": ${blockStart},"blockEnd": ${blockEnd},"topic0":"${topic0}"}' | http :8888/srv-applet-mgr/v0/monitor/contract_log/$PROJECTNAME -A bearer -a $TOK
 ```
 
 output like
@@ -270,7 +270,7 @@ output like
 ### Post blockchain transaction monitor
 
 ```sh
-echo '{"chainTx":{"eventType": "DEFAULT", "chainID": 4690, "txAddress": "${txAddress}"}}' | http :8888/srv-applet-mgr/v0/monitor/$PROJECTID -A bearer -a $TOK
+echo '{"eventType": "DEFAULT", "chainID": 4690, "txAddress": "${txAddress}"}' | http :8888/srv-applet-mgr/v0/monitor/chain_tx/$PROJECTNAME -A bearer -a $TOK
 ```
 
 output like
@@ -290,7 +290,7 @@ output like
 ### Post blockchain height monitor
 
 ```sh
-echo '{"chainHeight":{"eventType": "DEFAULT", "chainID": 4690, "height": ${height}}}' | http :8888/srv-applet-mgr/v0/monitor/$PROJECTID -A bearer -a $TOK
+echo '{"eventType": "DEFAULT", "chainID": 4690, "height": ${height}}' | http :8888/srv-applet-mgr/v0/monitor/chain_height/$PROJECTNAME -A bearer -a $TOK
 ```
 
 output like

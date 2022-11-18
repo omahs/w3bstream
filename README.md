@@ -110,6 +110,25 @@ make migrate     # create or update schema
 make run_server
 ```
 
-### Interact with W3bstream using CLI
+## Interact with W3bstream using CLI
 
 Please refer to [HOWTO.md](./HOWTO.md) for more details.
+
+## SDKs
+
+- Android: https://github.com/machinefi/w3bstream-android-sdk
+- iOS: https://github.com/machinefi/w3bstream-ios-sdk
+- Embedded: Coming soon!
+
+## Examples
+
+Learning how to get started with W3bstream? Here is a quick get-start example: https://github.com/machinefi/get-started
+
+More code examples: https://github.com/machinefi/w3bstream-examples
+
+Step-by-step tutorials can be found on dev portal: https://developers.iotex.io/
+
+## Community
+
+- Developer portal: https://developers.iotex.io/
+- Developer Discord (join #w3bstream channel): https://w3bstream.com/discord
