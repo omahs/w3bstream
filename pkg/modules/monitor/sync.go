@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx"
 	"github.com/machinefi/w3bstream/pkg/enums"
-	"github.com/machinefi/w3bstream/pkg/errors/status"
 	"github.com/machinefi/w3bstream/pkg/models"
 	"github.com/machinefi/w3bstream/pkg/types"
 )
@@ -49,26 +49,30 @@ func (s *sync) do(ctx context.Context) {
 			l.Error(errors.Wrap(err, "fetch project db failed"))
 			continue
 		}
-		s := enums.MONITOR_STATE__SYNCED
+
 		if m.DeletedAt.IsZero() {
+			s := enums.MONITOR_STATE__SYNCED
 			if err := createBlockchain(ctx, p, m.MonitorID, &m.Data); err != nil {
 				l.Error(errors.Wrap(err, "create blockchain failed"))
 				s = enums.MONITOR_STATE__FAILED_UNKNOWN
-				if err == status.Conflict {
+				if sqlx.DBErr(err).IsConflict() {
 					s = enums.MONITOR_STATE__FAILED_CONFLICT
 				}
+			}
+			m.State = s
+			if err := m.UpdateByMonitorID(d); err != nil {
+				l.Error(errors.Wrap(err, "update monitor db failed"))
 			}
 		} else {
 			if err := removeBlockchain(ctx, p, m.MonitorID, m.Data.Type); err != nil {
 				l.Error(errors.Wrap(err, "remove blockchain failed"))
-				if err != status.NotFound {
+				if !sqlx.DBErr(err).IsNotFound() {
 					continue
 				}
 			}
-		}
-		m.State = s
-		if err := m.UpdateByMonitorID(d); err != nil {
-			l.Error(errors.Wrap(err, "update monitor db failed"))
+			if err := m.DeleteByMonitorID(d); err != nil {
+				l.Error(errors.Wrap(err, "delete monitor db failed"))
+			}
 		}
 	}
 }

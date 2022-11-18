@@ -8,6 +8,7 @@ import (
 
 	bt "github.com/machinefi/w3bstream/pkg/depends/base/types"
 	confid "github.com/machinefi/w3bstream/pkg/depends/conf/id"
+	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx"
 	"github.com/machinefi/w3bstream/pkg/enums"
 	"github.com/machinefi/w3bstream/pkg/errors/status"
 	"github.com/machinefi/w3bstream/pkg/models"
@@ -78,21 +79,21 @@ func Remove(ctx context.Context, project *models.Project, id types.SFID, t enums
 		l.Error(errors.New("monitor project mismatch"))
 		return status.BadRequest.StatusErr().WithDesc("monitor project mismatch")
 	}
-	m.DeletedAt = bt.Timestamp{Time: time.Now()}
+	m.DeletedAt = bt.AsTimestamp(time.Now())
 	m.State = enums.MONITOR_STATE__SYNCING
 	if err := m.UpdateByMonitorID(d); err != nil {
 		l.Error(err)
 		return status.CheckDatabaseError(err, "UpdateByMonitorID")
 	}
 
-	if err := removeBlockchain(ctx, project, id, t); err != nil && err != status.NotFound {
+	if err := removeBlockchain(ctx, project, id, t); err != nil && !sqlx.DBErr(err).IsNotFound() {
 		l.Error(err)
 		return nil
 	}
-	m.State = enums.MONITOR_STATE__SYNCED
-	if err := m.UpdateByMonitorID(d); err != nil {
+
+	if err := m.DeleteByMonitorID(d); err != nil {
 		l.Error(err)
-		return status.CheckDatabaseError(err, "UpdateByMonitorID")
+		return status.CheckDatabaseError(err, "DeleteByMonitorID")
 	}
 	return nil
 }
