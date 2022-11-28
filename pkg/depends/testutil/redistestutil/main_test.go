@@ -25,4 +25,13 @@ func DISABLE_TestLivenessCheck(t *testing.T) {
 
 	kvs = Endpoint.LivenessCheck()
 	NewWithT(t).Expect(kvs[Endpoint.Endpoint.Host()]).To(Equal("ok"))
+
+	op := Redis.Get()
+	repl, err := op.Do("set", Redis.Key("test"), 100)
+	NewWithT(t).Expect(err).To(BeNil())
+	NewWithT(t).Expect(repl).To(Equal("OK"))
+
+	repl, err = op.Do("get", Redis.Key("test"))
+	NewWithT(t).Expect(err).To(BeNil())
+	NewWithT(t).Expect(repl).To(Equal([]byte("100")))
 }
