@@ -25,6 +25,6 @@ type RelApplet struct {
 }
 
 type AppletInfo struct {
-	Name     string `db:"f_name" json:"name"`
+	Name     string `db:"f_name"      json:"name"`
 	WasmName string `db:"f_wasm_name" json:"wasmName"`
 }

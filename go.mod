@@ -15,7 +15,6 @@ require (
 	github.com/lib/pq v1.10.6
 	github.com/onsi/gomega v1.20.0
 	github.com/pkg/errors v0.9.1
-	github.com/saitofun/qlib v0.0.0-20220822220243-9fdd3992fe4b
 	github.com/shirou/gopsutil/v3 v3.22.8
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.5.0

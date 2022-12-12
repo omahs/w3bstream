@@ -9,20 +9,19 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
-	confredis "github.com/machinefi/w3bstream/pkg/depends/conf/redis"
-	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx"
-
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/gomodule/redigo/redis"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 
 	conflog "github.com/machinefi/w3bstream/pkg/depends/conf/log"
+	confredis "github.com/machinefi/w3bstream/pkg/depends/conf/redis"
+	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx"
 	"github.com/machinefi/w3bstream/pkg/depends/x/mapx"
 	"github.com/machinefi/w3bstream/pkg/types/wasm"
 )

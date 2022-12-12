@@ -24,6 +24,17 @@ func (m *Map[K, V]) Store(k K, v V) {
 	m.val[k] = v
 }
 
+func (m *Map[K, V]) StoreNX(k K, v V) bool {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	_, ok := m.val[k]
+	if ok {
+		return false
+	}
+	m.val[k] = v
+	return true
+}
+
 func (m *Map[K, V]) LoadOrStore(k K, newv func() (V, error)) (V, error) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
@@ -44,6 +55,12 @@ func (m *Map[K, V]) Remove(k K) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
 	delete(m.val, k)
+}
+
+func (m *Map[K, V]) Clear() {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	m.val = make(map[K]V)
 }
 
 func (m *Map[K, V]) LoadAndRemove(k K) (v V, ok bool) {

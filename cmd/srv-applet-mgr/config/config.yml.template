@@ -47,3 +47,9 @@ SRV_APPLET_MGR__Server_Port: "80"
 SRV_APPLET_MGR__Server_Spec: ./swagger.json
 SRV_APPLET_MGR__UploadConf_FileSizeLimit: "104857600"
 SRV_APPLET_MGR__UploadConf_Root: ./asserts
+SRV_APPLET_MGR__WasmDB_ConnMaxLifetime: 1h
+SRV_APPLET_MGR__WasmDB_Master: postgres://127.0.0.1:5432
+SRV_APPLET_MGR__WasmDB_PoolSize: "10"
+SRV_APPLET_MGR__WasmDB_Retry_Interval: 3s
+SRV_APPLET_MGR__WasmDB_Retry_Repeats: "3"
+SRV_APPLET_MGR__WasmDB_Slave: ""

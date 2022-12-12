@@ -4,9 +4,10 @@ import (
 	"os"
 	"testing"
 
+	. "github.com/onsi/gomega"
+
 	"github.com/machinefi/w3bstream/pkg/depends/base/consts"
 	. "github.com/machinefi/w3bstream/pkg/depends/testutil/redistestutil"
-	. "github.com/onsi/gomega"
 )
 
 func TestInit(t *testing.T) {

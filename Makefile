@@ -6,10 +6,15 @@ DOCKER_COMPOSE_FILE = ./docker-compose.yaml
 update_go_module:
 	go mod tidy
 
-install_toolkit: update_go_module
-	@go install github.com/machinefi/w3bstream/pkg/depends/gen/cmd/...
+install_toolkit:
+	@if [ ! -f "$$GOBIN/toolkit" ] ; \
+	then \
+		go install github.com/machinefi/w3bstream/pkg/depends/gen/cmd/... ; \
+		echo "toolkit installed" ; \
+	fi
+	@echo `which toolkit`
 
-install_easyjson: update_go_module
+install_easyjson:
 	@go install github.com/mailru/easyjson/...@latest
 
 ## TODO add source format as a githook
@@ -19,7 +24,6 @@ format: install_toolkit
 ## gen code
 generate: install_toolkit install_easyjson
 	@go generate ./...
-	@toolkit fmt
 
 ## to migrate database models, if model defines changed, make this entry
 migrate: install_toolkit install_easyjson
