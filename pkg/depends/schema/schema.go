@@ -39,7 +39,6 @@ func (s *Schema) AddTable(t *Table) {
 	if !s.StoreNX(t.Name, t) {
 		panic(errors.Errorf("duplicated table: %s", t.Name))
 	}
-	s.Tables = append(s.Tables, t)
 }
 
 func (s *Schema) T(name string) *Table {
@@ -55,6 +54,7 @@ func (s *Schema) Init() error {
 		if err := t.Init(); err != nil {
 			return err
 		}
+		s.AddTable(t)
 		t.WithSchema(s.Name)
 	}
 	return nil

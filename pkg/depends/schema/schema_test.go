@@ -9,35 +9,37 @@ import (
 )
 
 func ExampleSchema() {
-	s := schema.Schema{Name: "demo"}
-	t := &schema.Table{
-		Name: "tbl",
-		Desc: "test table",
-		Cols: []*schema.Column{{
-			Name: "f_username",
-			Constrains: &schema.ColumnType{
-				Datatype: schema.DATATYPE__TEXT,
-				Length:   255,
-				Desc:     "user name",
+	s := schema.Schema{
+		Name: "demo",
+		Tables: []*schema.Table{
+			{
+				Name: "tbl",
+				Desc: "test table",
+				Cols: []*schema.Column{{
+					Name: "f_username",
+					Constrains: &schema.ColumnType{
+						Datatype: schema.DATATYPE__TEXT,
+						Length:   255,
+						Desc:     "user name",
+					},
+				}, {
+					Name: "f_gender",
+					Constrains: &schema.ColumnType{
+						Datatype: schema.DATATYPE__UINT8,
+						Length:   255,
+						Desc:     "user name",
+					},
+				}},
+				Keys: []*schema.Key{{
+					Name:     "ui_username",
+					IsUnique: true,
+					IndexDef: schema.IndexDef{ColumnNames: []string{"f_username"}},
+				}},
+				WithSoftDeletion: true,
+				WithPrimaryKey:   true,
 			},
-		}, {
-			Name: "f_gender",
-			Constrains: &schema.ColumnType{
-				Datatype: schema.DATATYPE__UINT8,
-				Length:   255,
-				Desc:     "user name",
-			},
-		}},
-		Keys: []*schema.Key{{
-			Name:     "ui_username",
-			IsUnique: true,
-			IndexDef: schema.IndexDef{ColumnNames: []string{"f_username"}},
-		}},
-		WithSoftDeletion: true,
-		WithPrimaryKey:   true,
+		},
 	}
-
-	s.AddTable(t)
 
 	data, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
