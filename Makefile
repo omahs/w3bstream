@@ -74,8 +74,11 @@ drop_docker:
 restart_docker: drop_docker run_docker
 
 # run server in docker containers
-run_docker:
+run_dockerd:
 	@WS_WORKING_DIR=$(shell pwd)/working_dir WS_BACKEND_IMAGE=${DOCKER_IMAGE} WS_STUDIO_IMAGE=${STUDIO_DOCKER_IMAGE} docker-compose -p w3bstream -f ${DOCKER_COMPOSE_FILE} up -d
+
+run_docker:
+	@WS_WORKING_DIR=$(shell pwd)/working_dir WS_BACKEND_IMAGE=${DOCKER_IMAGE} WS_STUDIO_IMAGE=${STUDIO_DOCKER_IMAGE} docker-compose -p w3bstream -f ${DOCKER_COMPOSE_FILE} up
 
 ## migrate first
 run_server: build_server

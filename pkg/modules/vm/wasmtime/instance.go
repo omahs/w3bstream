@@ -67,6 +67,7 @@ func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte) (*Instan
 	_ = linker.FuncWrap("env", "ws_get_redis_db", ef.GetRedisDB)
 	_ = linker.FuncWrap("env", "ws_set_redis_db", ef.SetRedisDB)
 	_ = linker.FuncWrap("env", "ws_set_sql_db", ef.SetSQLDB)
+	_ = linker.FuncWrap("env", "ws_get_sql_db", ef.GetSQLDB)
 
 	_ = linker.DefineWasi()
 

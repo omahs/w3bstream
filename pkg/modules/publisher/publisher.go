@@ -2,6 +2,7 @@ package publisher
 
 import (
 	"context"
+	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx/datatypes"
 
 	confid "github.com/machinefi/w3bstream/pkg/depends/conf/id"
 	"github.com/machinefi/w3bstream/pkg/depends/conf/jwt"
@@ -66,6 +67,7 @@ func GetPublisherByPublisherKey(ctx context.Context, publisherKey string) (*mode
 
 type ListPublisherReq struct {
 	projectID types.SFID
+	datatypes.Pager
 }
 
 func (r *ListPublisherReq) SetCurrentProject(prjID types.SFID) { r.projectID = prjID }
@@ -77,34 +79,71 @@ func (r *ListPublisherReq) Condition() builder.SqlCondition {
 
 func (r *ListPublisherReq) Additions() builder.Additions { return nil }
 
-type ListPublisherRsp struct {
-	Total int64              `json:"total"`
-	Data  []models.Publisher `json:"data"`
+type InfoPublisher struct {
+	models.Publisher
+	ProjectName string `db:"f_project_name"`
+	datatypes.OperationTimes
 }
 
-func ListPublisher(ctx context.Context, r *ListPublisherReq) (ret *ListPublisherRsp, err error) {
-	l := types.MustLoggerFromContext(ctx)
-	d := types.MustDBExecutorFromContext(ctx)
+type ListPublisherRsp struct {
+	Total int64           `json:"total"`
+	Data  []InfoPublisher `json:"data"`
+}
 
-	m := &models.Publisher{}
+func ListPublisher(ctx context.Context, r *ListPublisherReq) (*ListPublisherRsp, error) {
+	var (
+		l = types.MustLoggerFromContext(ctx)
+		d = types.MustDBExecutorFromContext(ctx)
+
+		ret        = &ListPublisherRsp{}
+		err        error
+		cond       = r.Condition()
+		mPublisher = &models.Publisher{}
+		mProject   = &models.Project{}
+	)
 
 	_, l = l.Start(ctx, "ListPublisher")
 	defer l.End()
 
-	ret = &ListPublisherRsp{}
+	ret.Total, err = mPublisher.Count(d, cond)
+	if err != nil {
+		return nil, status.CheckDatabaseError(err, "CountPublisher")
+	}
 
-	ret.Data, err = m.List(d, r.Condition(), r.Additions()...)
+	details := make([]InfoPublisher, 0)
+	err = d.QueryAndScan(
+		builder.Select(
+			builder.MultiWith(
+				",",
+				builder.Alias(mPublisher.ColProjectID(), "f_project_id"),
+				builder.Alias(mProject.ColName(), "f_project_name"),
+				builder.Alias(mPublisher.ColPublisherID(), "f_publisher_id"),
+				builder.Alias(mPublisher.ColName(), "f_name"),
+				builder.Alias(mPublisher.ColKey(), "f_key"),
+				builder.Alias(mPublisher.ColToken(), "f_token"),
+				builder.Alias(mPublisher.ColCreatedAt(), "f_created_at"),
+				builder.Alias(mPublisher.ColUpdatedAt(), "f_updated_at"),
+			),
+		).From(
+			d.T(mPublisher),
+			builder.LeftJoin(d.T(mProject)).
+				On(mPublisher.ColProjectID().Eq(mProject.ColProjectID())),
+			builder.Where(cond),
+			builder.OrderBy(
+				builder.DescOrder(mPublisher.ColCreatedAt()),
+				builder.AscOrder(mPublisher.ColName()),
+			),
+			r.Pager.Addition(),
+		),
+		&details,
+	)
 	if err != nil {
 		l.Error(err)
 		return nil, status.CheckDatabaseError(err, "ListPublisher")
 	}
 
-	ret.Total, err = m.Count(d, r.Condition())
-	if err != nil {
-		l.Error(err)
-		return nil, status.CheckDatabaseError(err, "ListPublisherCount")
-	}
-	return ret, nil
+	ret.Data = details
+	return ret, err
 }
 
 type RemovePublisherReq struct {

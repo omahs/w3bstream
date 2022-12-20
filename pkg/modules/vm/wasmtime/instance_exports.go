@@ -3,9 +3,11 @@ package wasmtime
 import (
 	"context"
 	"crypto/ecdsa"
+	"database/sql"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"math/big"
 	"time"
 
@@ -240,6 +242,131 @@ func (ef *ExportFuncs) execSQLQuery(prestate string, params ...interface{}) erro
 		return err
 	}
 	return nil
+}
+
+func (ef *ExportFuncs) GetSQLDB(c *wasmtime.Caller, addr, size int32, vmAddrPtr, vmSizePtr int32) int32 {
+	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.store)
+	data, err := read(memBuf, addr, size)
+	if err != nil {
+		ef.logger.Error(err)
+		return int32(wasm.ResultStatusCode_ResourceNotFound)
+	}
+
+	prestate, params, err := parseSQLQuery(data)
+	if err != nil {
+		ef.logger.Error(err)
+		return wasm.ResultStatusCode_Failed
+	}
+
+	rows, err := ef.querySQLQuery(prestate, params...)
+	if err != nil {
+		ef.logger.Error(err)
+		return wasm.ResultStatusCode_Failed
+	}
+
+	ret, err := jsonifyRows(rows)
+	if err != nil {
+		ef.logger.Error(err)
+		return wasm.ResultStatusCode_Failed
+	}
+
+	if err := ef.copyDataIntoWasm(c, ret, vmAddrPtr, vmSizePtr); err != nil {
+		ef.logger.Error(err)
+		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
+	}
+
+	return int32(wasm.ResultStatusCode_OK)
+}
+
+func (ef *ExportFuncs) querySQLQuery(prestate string, params ...interface{}) (*sql.Rows, error) {
+	return ef.pgDB.QueryContext(context.Background(), prestate, params...)
+}
+
+func jsonifyRows(rawRows *sql.Rows) ([]byte, error) {
+	if rawRows == nil {
+		return nil, errors.New("rows are empty")
+	}
+
+	columnTypes, err := rawRows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]interface{}, 0)
+	for rawRows.Next() {
+		scanArgs := make([]interface{}, len(columnTypes))
+		for i := range columnTypes {
+			switch columnTypes[i].DatabaseTypeName() {
+			case "VARCHAR", "TEXT", "CHAR":
+				scanArgs[i] = new(sql.NullString)
+			case "TIMESTAMP", "TIME", "DATE":
+				scanArgs[i] = new(sql.NullTime)
+			case "BOOL", "BOOLEAN":
+				scanArgs[i] = new(sql.NullBool)
+			case "INT", "INTEGER", "SMALLINT", "BIGINT", "INT2", "INT4", "INT8":
+				scanArgs[i] = new(sql.NullInt64)
+			case "FLOAT", "FLOAT4", "FLOAT8", "DOUBLE":
+				scanArgs[i] = new(sql.NullFloat64)
+			default:
+				// fmt.Println(columnTypes[i].DatabaseTypeName(), columnTypes[i].ScanType().Name())
+				scanArgs[i] = new(sql.NullString)
+			}
+		}
+
+		if err := rawRows.Scan(scanArgs...); err != nil {
+			return nil, err
+		}
+
+		entryMap := make(map[string]interface{}, len(columnTypes))
+		for i := 0; i < len(columnTypes); i++ {
+			colName := columnTypes[i].Name()
+			switch v := scanArgs[i].(type) {
+			case *sql.NullBool:
+				if !v.Valid {
+					entryMap[colName] = nil
+					continue
+				}
+				entryMap[colName], err = v.Value()
+			case *sql.NullString:
+				if !v.Valid {
+					entryMap[colName] = nil
+					continue
+				}
+				entryMap[colName], err = v.Value()
+			case *sql.NullFloat64:
+				if !v.Valid {
+					entryMap[colName] = nil
+					continue
+				}
+				entryMap[colName], err = v.Value()
+			case *sql.NullInt64:
+				if !v.Valid {
+					entryMap[colName] = nil
+					continue
+				}
+				entryMap[colName], err = v.Value()
+			// TODO: support time encodings
+			// case *sql.NullTime:
+			// 	if !v.Valid {
+			// 		entryMap[colName] = nil
+			// 		continue
+			// 	}
+			// 	entryMap[colName], err = v.Value()
+			default:
+				entryMap[colName] = scanArgs[i]
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+		rows = append(rows, entryMap)
+	}
+	if len(rows) == 0 {
+		return []byte{}, nil
+	}
+	if len(rows) == 1 {
+		return json.Marshal(rows[0])
+	}
+	return json.Marshal(rows)
 }
 
 func (ef *ExportFuncs) GetDB(c *wasmtime.Caller,
