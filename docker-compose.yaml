@@ -27,6 +27,7 @@ services:
       SRV_APPLET_MGR__Jwt_SignKey: ${JWT_SIGN_KEY:-xxxx}
       SRV_APPLET_MGR__Postgres_Master: postgresql://${POSTGRES_USER:-w3badmin}:${POSTGRES_PASSWORD:-PaSsW0Rd}@postgres:5432/${POSTGRES_DB:-w3bstream}?sslmode=disable
       SRV_APPLET_MGR__MonitorDB_Master: postgresql://${POSTGRES_USER:-w3badmin}:${POSTGRES_PASSWORD:-PaSsW0Rd}@postgres:5432/${POSTGRES_DB:-w3bstream}?sslmode=disable
+      SRV_APPLET_MGR__WasmDB_Master: postgresql://${POSTGRES_USER:-w3badmin}:${POSTGRES_PASSWORD:-PaSsW0Rd}@postgres:5432/${POSTGRES_DB:-w3bstream}?sslmode=disable
       SRV_APPLET_MGR__MqttBroker_Server: mqtt://mqtt_server:1883
       SRV_APPLET_MGR__Server_Port: "8888"
     volumes:
