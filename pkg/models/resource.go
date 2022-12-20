@@ -23,6 +23,6 @@ type RelResource struct {
 }
 
 type ResourceInfo struct {
-	Path string `db:"f_path,default=''" json:"-"`
-	Md5  string `db:"f_md5"  json:"-"`
+	Path string `db:"f_path,default=''" json:"path"`
+	Md5  string `db:"f_md5"             json:"md5"`
 }

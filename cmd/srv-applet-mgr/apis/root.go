@@ -10,6 +10,7 @@ import (
 	"github.com/machinefi/w3bstream/cmd/srv-applet-mgr/apis/monitor"
 	"github.com/machinefi/w3bstream/cmd/srv-applet-mgr/apis/project"
 	"github.com/machinefi/w3bstream/cmd/srv-applet-mgr/apis/publisher"
+	"github.com/machinefi/w3bstream/cmd/srv-applet-mgr/apis/resource"
 	"github.com/machinefi/w3bstream/cmd/srv-applet-mgr/apis/strategy"
 	"github.com/machinefi/w3bstream/pkg/depends/conf/jwt"
 	"github.com/machinefi/w3bstream/pkg/depends/kit/httptransport"
@@ -39,5 +40,6 @@ func init() {
 		RouterAuth.Register(publisher.Root)
 		RouterAuth.Register(strategy.Root)
 		RouterAuth.Register(monitor.Root)
+		RouterAuth.Register(resource.Root)
 	}
 }
