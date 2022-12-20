@@ -2,15 +2,17 @@ package publisher
 
 import (
 	"context"
-	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx/datatypes"
 
 	confid "github.com/machinefi/w3bstream/pkg/depends/conf/id"
 	"github.com/machinefi/w3bstream/pkg/depends/conf/jwt"
 	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx"
 	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx/builder"
+	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx/datatypes"
 	"github.com/machinefi/w3bstream/pkg/errors/status"
 	"github.com/machinefi/w3bstream/pkg/models"
+	"github.com/machinefi/w3bstream/pkg/modules/project"
 	"github.com/machinefi/w3bstream/pkg/types"
+	"github.com/pkg/errors"
 )
 
 type CreatePublisherReq struct {
@@ -210,4 +212,32 @@ func UpdatePublisher(ctx context.Context, publisherID types.SFID, r *CreatePubli
 	}
 
 	return
+}
+
+func GetPublisherByPubKeyAndProjectName(ctx context.Context, pubKey, prjName string) (*models.Publisher, error) {
+	l := types.MustLoggerFromContext(ctx)
+	d := types.MustDBExecutorFromContext(ctx)
+
+	_, l = l.Start(ctx, "GetPublisherByPubKeyAndProjectID")
+	defer l.End()
+
+	pub := &models.Publisher{PublisherInfo: models.PublisherInfo{Key: pubKey}}
+	if err := pub.FetchByKey(d); err != nil {
+		l.Error(err)
+		return nil, status.CheckDatabaseError(err, "GetPublisherByKey")
+	}
+
+	l = l.WithValues("pub_id", pub.PublisherID)
+	prj, err := project.GetProjectByProjectName(ctx, prjName)
+	if err != nil {
+		l.Error(err)
+		return nil, err
+	}
+	l = l.WithValues("project_id", prj.ProjectID)
+
+	if pub.ProjectID != prj.ProjectID {
+		l.Error(errors.New("no project permission"))
+		return nil, status.NoProjectPermission
+	}
+	return nil, nil
 }
