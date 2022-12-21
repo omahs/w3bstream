@@ -547,10 +547,10 @@ func sendETHTx(cl *ChainClient, toStr string, valueStr string, dataStr string) (
 	if err != nil {
 		return "", err
 	}
-	// err = cl.chain.SendTransaction(context.Background(), signedTx)
-	// if err != nil {
-	// 	return "", err
-	// }
+	err = cl.chain.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		return "", err
+	}
 	return signedTx.Hash().Hex(), nil
 }
 
