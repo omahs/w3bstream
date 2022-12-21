@@ -8,7 +8,11 @@ var NameVersion = "w3bstream@v0.0.1"
 type ResultStatusCode int32
 
 const (
-	ResultStatusCode_OK ResultStatusCode = iota
+	ResultStatusCode_OK ResultStatusCode = -iota
+
+	// TODO following result status
+	ResultStatusCode_Failed = -1 // reserved for wasm invoke failed
+
 	ResultStatusCode_UnexportedHandler
 	ResultStatusCode_ResourceNotFound
 	ResultStatusCode_ImportNotFound
@@ -16,9 +20,6 @@ const (
 	ResultStatusCode_TransDataToVMFailed
 	ResultStatusCode_TransDataFromVMFailed
 	ResultStatusCode_HostInternal
-
-	// TODO following result status
-	ResultStatusCode_Failed = -1 // reserved for wasm invoke failed
 )
 
 type InstanceState = enums.InstanceState

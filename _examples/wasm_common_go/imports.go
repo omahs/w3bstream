@@ -54,6 +54,12 @@ func GetDataByRID(rid uint32) ([]byte, error) {
 	return m.data, nil
 }
 
+func SetDataByRID(rid uint32, data string) {
+	addr, size := StringToPointer(data)
+
+	_ = _ws_set_data(rid, addr, size)
+}
+
 func GetDB(key string) int32 {
 	addr, size := StringToPointer(key)
 

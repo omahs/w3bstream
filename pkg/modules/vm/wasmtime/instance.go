@@ -53,8 +53,8 @@ func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte) (*Instan
 		cl:      cl,
 		logger: types.MustLoggerFromContext(ctx).WithValues(
 			"@src", "wasm",
-			"@namespace", types.MustProjectFromContext(ctx).Name,
-			"@applet", types.MustAppletFromContext(ctx).Name,
+			//"@namespace", types.MustProjectFromContext(ctx).Name,
+			//"@applet", types.MustAppletFromContext(ctx).Name,
 		),
 	}
 	_ = linker.FuncWrap("env", "ws_get_data", ef.GetData)
