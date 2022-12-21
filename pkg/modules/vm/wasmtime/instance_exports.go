@@ -462,7 +462,7 @@ func (ef *ExportFuncs) GetRedisDB(c *wasmtime.Caller,
 
 // TODO: add chainID in sendtx abi
 // TODO: make sendTX async, and add callback if possible
-func (ef *ExportFuncs) SendTX(c *wasmtime.Caller, offset, size int32) int32 {
+func (ef *ExportFuncs) SendTX(c *wasmtime.Caller, offset, size, vmAddrPtr, vmSizePtr int32) int32 {
 	if ef.cl == nil {
 		ef.logger.Error(errors.New("eth client doesn't exist"))
 		return wasm.ResultStatusCode_Failed
@@ -483,6 +483,10 @@ func (ef *ExportFuncs) SendTX(c *wasmtime.Caller, offset, size int32) int32 {
 	if err != nil {
 		ef.logger.Error(err)
 		return wasm.ResultStatusCode_Failed
+	}
+	if err := ef.copyDataIntoWasm(c, []byte(txHash), vmAddrPtr, vmSizePtr); err != nil {
+		ef.logger.Error(err)
+		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
 	}
 	ef.logger.Info("tx hash: %s", txHash)
 	return int32(wasm.ResultStatusCode_OK)
@@ -543,10 +547,10 @@ func sendETHTx(cl *ChainClient, toStr string, valueStr string, dataStr string) (
 	if err != nil {
 		return "", err
 	}
-	err = cl.chain.SendTransaction(context.Background(), signedTx)
-	if err != nil {
-		return "", err
-	}
+	// err = cl.chain.SendTransaction(context.Background(), signedTx)
+	// if err != nil {
+	// 	return "", err
+	// }
 	return signedTx.Hash().Hex(), nil
 }
 
