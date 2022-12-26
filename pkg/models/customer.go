@@ -11,7 +11,7 @@ type Customer struct {
 	FirstName string `json:"firstName" db:"first_name"`
 	LastName  string `json:"lastName"  db:"last_name"`
 	Age       int    `json:"age"       db:"age"`
-	TaxNumber string `json:"taxNumber" db:"tax_number"`
+	TaxNumber string `json:"taxNumber" db:"tax_number,default=''"`
 	City      string `json:"city"   db:"city"`
 	datatypes.OperationTimesWithDeleted
 }

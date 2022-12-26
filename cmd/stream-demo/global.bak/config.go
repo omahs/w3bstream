@@ -4,11 +4,11 @@ import (
 	"context"
 	"os"
 
+	streammodes "github.com/machinefi/w3bstream/cmd/stream-demo/models"
 	"github.com/machinefi/w3bstream/pkg/depends/base/consts"
 	confapp "github.com/machinefi/w3bstream/pkg/depends/conf/app"
 	confhttp "github.com/machinefi/w3bstream/pkg/depends/conf/http"
 	confid "github.com/machinefi/w3bstream/pkg/depends/conf/id"
-	confjwt "github.com/machinefi/w3bstream/pkg/depends/conf/jwt"
 	conflog "github.com/machinefi/w3bstream/pkg/depends/conf/log"
 	confmqtt "github.com/machinefi/w3bstream/pkg/depends/conf/mqtt"
 	confpostgres "github.com/machinefi/w3bstream/pkg/depends/conf/postgres"
@@ -31,40 +31,37 @@ var (
 
 	db        = &confpostgres.Endpoint{Database: models.DB}
 	monitordb = &confpostgres.Endpoint{Database: models.MonitorDB}
-	//insDB     = &confpostgres.Endpoint{Database: streammodes.InsDB}
-	server = &confhttp.Server{}
+	insDB     = &confpostgres.Endpoint{Database: streammodes.InsDB}
+	server    = &confhttp.Server{}
 )
 
 func init() {
 	config := &struct {
-		Postgres  *confpostgres.Endpoint
-		MonitorDB *confpostgres.Endpoint
-		//InstanceDB *confpostgres.Endpoint
+		Postgres   *confpostgres.Endpoint
+		MonitorDB  *confpostgres.Endpoint
+		InstanceDB *confpostgres.Endpoint
 		MqttBroker *confmqtt.Broker
 		Redis      *confredis.Redis
 		Server     *confhttp.Server
-		Jwt        *confjwt.Jwt
 		Logger     *conflog.Log
 		StdLogger  conflog.Logger
-		UploadConf *types.UploadConfig
 		EthClient  *types.ETHClientConfig
 	}{
-		Postgres:  db,
-		MonitorDB: monitordb,
-		//InstanceDB: insDB,
+		Postgres:   db,
+		MonitorDB:  monitordb,
+		InstanceDB: insDB,
 		MqttBroker: &confmqtt.Broker{},
 		Redis:      &confredis.Redis{},
 		Server:     server,
-		Jwt:        &confjwt.Jwt{},
 		Logger:     &conflog.Log{},
 		StdLogger:  conflog.Std(),
-		UploadConf: &types.UploadConfig{},
 		EthClient:  &types.ETHClientConfig{},
 	}
 
 	name := os.Getenv(consts.EnvProjectName)
 	if name == "" {
-		name = "srv-applet-mgr"
+		name = "srv-applet-ins"
+		//name = "srv-applet-mgr"
 	}
 	os.Setenv(consts.EnvProjectName, name)
 	config.Logger.Name = name
@@ -90,14 +87,12 @@ func init() {
 	WithContext = contextx.WithContextCompose(
 		types.WithDBExecutorContext(config.Postgres),
 		types.WithMonitorDBExecutorContext(config.MonitorDB),
-		//types.WithInsDBExecutorContext(config.InstanceDB),
+		types.WithInsDBExecutorContext(config.InstanceDB),
 		types.WithPgEndpointContext(config.Postgres),
 		types.WithRedisEndpointContext(config.Redis),
 		types.WithLoggerContext(conflog.Std()),
 		types.WithMqttBrokerContext(config.MqttBroker),
-		types.WithUploadConfigContext(config.UploadConf),
 		confid.WithSFIDGeneratorContext(confid.MustNewSFIDGenerator()),
-		confjwt.WithConfContext(config.Jwt),
 		types.WithETHClientConfigContext(config.EthClient),
 		types.WithTaskWorkerContext(worker),
 		types.WithTaskBoardContext(mq.NewTaskBoard(tasks)),
@@ -119,7 +114,7 @@ func Migrate() {
 	if err := migration.Migrate(monitordb.WithContext(ctx), nil); err != nil {
 		log.Panic(err)
 	}
-	//if err := migration.Migrate(insDB.WithContext(ctx), nil); err != nil {
-	//	log.Panic(err)
-	//}
+	if err := migration.Migrate(insDB.WithContext(ctx), nil); err != nil {
+		log.Panic(err)
+	}
 }

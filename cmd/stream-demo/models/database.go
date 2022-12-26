@@ -2,12 +2,13 @@ package models
 
 import (
 	"database/sql/driver"
-
 	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx"
+
 	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx/datatypes"
 )
 
 var (
+	DB    = sqlx.NewDatabase("demo").WithSchema("applet_management")
 	InsDB = sqlx.NewDatabase("demo").WithSchema("applet_instance")
 )
 

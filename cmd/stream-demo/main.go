@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/reactivex/rxgo/v2"
-	"syreclabs.com/go/faker"
 
 	"github.com/machinefi/w3bstream/cmd/stream-demo/global"
-	"github.com/machinefi/w3bstream/cmd/stream-demo/models"
 	"github.com/machinefi/w3bstream/cmd/stream-demo/tasks"
 	confid "github.com/machinefi/w3bstream/pkg/depends/conf/id"
 	"github.com/machinefi/w3bstream/pkg/depends/kit/kit"
+	"github.com/machinefi/w3bstream/pkg/depends/protocol/eventpb"
+	"github.com/machinefi/w3bstream/pkg/models"
+	"github.com/machinefi/w3bstream/pkg/modules/mq"
 	"github.com/machinefi/w3bstream/pkg/modules/vm"
 	"github.com/machinefi/w3bstream/pkg/modules/vm/wasmtime"
 	"github.com/machinefi/w3bstream/pkg/types"
@@ -27,14 +27,24 @@ func main() {
 	global.Migrate()
 
 	ch := make(chan rxgo.Item)
-	go producer(ch)
 
 	ctx := global.WithContext(context.Background())
 	//ctx = types.WithProject()
 	//ctx = types.WithApplet()
 
 	log := types.MustLoggerFromContext(ctx)
-	d := types.MustInsDBExecutorFromContext(ctx)
+	d := types.MustDBExecutorFromContext(ctx)
+	//d := types.MustInsDBExecutorFromContext(ctx)
+
+	channel := "stream-dome"
+
+	go func() {
+		if err := initChannel(ctx, channel, func(ctx context.Context, channel string, data *eventpb.Event) (interface{}, error) {
+			return onEventReceived(ctx, channel, ch, data)
+		}); err != nil {
+			log.Panic(err)
+		}
+	}()
 
 	go kit.Run(tasks.Root, global.TaskServer())
 
@@ -74,8 +84,11 @@ func main() {
 		}
 
 		rb, ok := ins.GetResource(uint32(code))
+		//TODO remove resource
+		defer ins.RmvResource(ctx, uint32(code))
 		if !ok {
 			log.Error(errors.New("not found"))
+			return res
 		}
 
 		result := strings.ToLower(string(rb))
@@ -89,7 +102,7 @@ func main() {
 
 		// 4.return data
 		return res
-	}).Map(func(ctx context.Context, i interface{}) (interface{}, error) {
+	}).Map(func(c context.Context, i interface{}) (interface{}, error) {
 		// 1.序列化
 		b, err := json.Marshal(i.(models.Customer))
 		if err != nil {
@@ -107,12 +120,14 @@ func main() {
 		}
 
 		rb, ok := ins.GetResource(uint32(code))
+		defer ins.RmvResource(ctx, uint32(code))
 		if !ok {
-			log.Error(errors.New("not found"))
+			log.Error(errors.New("mapTax result not found"))
+			return nil, errors.New("mapTax result not found")
 		}
 
-		customer := &models.Customer{}
-		err = json.Unmarshal(rb, customer)
+		customer := models.Customer{}
+		err = json.Unmarshal(rb, &customer)
 
 		return customer, err
 	}).GroupByDynamic(func(item rxgo.Item) string {
@@ -123,19 +138,22 @@ func main() {
 		}
 
 		// 2.调用wasm code
-		code := ins.HandleEvent(ctx, "mapTax", b).Code
-		log.Info(fmt.Sprintf("mapTax wasm code %d", code))
+		code := ins.HandleEvent(ctx, "groupByAge", b).Code
+		log.Info(fmt.Sprintf("groupByAge wasm code %d", code))
 
 		// 3.get/parse data
 		if code < 0 {
-			log.Error(errors.New(fmt.Sprintf("%v %s error.", item.V.(models.Customer), "mapTax")))
+			log.Error(errors.New(fmt.Sprintf("%v %s error.", item.V.(models.Customer), "groupByAge")))
 			//TODO error 怎么处理
 			return "error"
 		}
 
 		rb, ok := ins.GetResource(uint32(code))
+		defer ins.RmvResource(ctx, uint32(code))
 		if !ok {
-			log.Error(errors.New("not found"))
+			log.Error(errors.New("groupByAge result not found"))
+			//TODO error 怎么处理
+			return "error"
 		}
 
 		groupKey := string(rb)
@@ -144,44 +162,54 @@ func main() {
 
 	c := observable.Observe()
 	for item := range c {
-		fmt.Println(item.V)
+		//fmt.Println(item.V)
 
 		switch item.V.(type) {
 		case rxgo.GroupedObservable: // group operator
 			go func() {
 				obs := item.V.(rxgo.GroupedObservable)
-				fmt.Printf("New observable: %s\n", obs.Key)
+				log.Info(fmt.Sprintf("New observable: %s", obs.Key))
 				for i := range obs.Observe() {
-					fmt.Printf("item: %v\n", i.V)
+					log.Info(fmt.Sprintf("item: %v", i.V))
 					customer := i.V.(models.Customer)
-					fmt.Println(fmt.Sprintf("customer: %v", customer))
-					customer.Create(d)
+					log.Info(fmt.Sprintf("customer: %v", customer))
+					if err := customer.Create(d); err != nil {
+						log.Error(err)
+					}
 				}
 			}()
 		case rxgo.ObservableImpl: // window operator
 			obs := item.V.(rxgo.ObservableImpl)
 			for i := range obs.Observe() {
 				//for i := range obs.Count().Observe() {
-				fmt.Printf("item: %v\n", i.V)
+				log.Info(fmt.Sprintf("item: %v", i.V))
 			}
 		default:
-			fmt.Printf("item: %v\n", item.V)
+			log.Info(fmt.Sprintf("item: %v", item.V))
+			customer := item.V.(models.Customer)
+			log.Info(fmt.Sprintf("customer: %v", customer))
+			if err := customer.Create(d); err != nil {
+				log.Error(err)
+			}
 		}
 	}
 }
 
-func producer(ch chan<- rxgo.Item) {
-	for _ = range time.Tick(time.Second) {
-		for i := 0; i < 10; i++ {
-			ch <- rxgo.Of(models.Customer{
-				ID:        faker.Code().Isbn10(),
-				FirstName: faker.Name().FirstName(),
-				LastName:  faker.Name().LastName(),
-				Age:       faker.RandomInt(15, 53),
-				City:      faker.Address().City(),
-			})
-		}
+func initChannel(ctx context.Context, channel string, hdl mq.OnMessage) (err error) {
+	err = mq.CreateChannel(ctx, channel, hdl)
+	if err != nil {
+		err = errors.Errorf("create channel: [channel:%s] [err:%v]", channel, err)
 	}
+	return err
+}
+
+func onEventReceived(ctx context.Context, projectName string, ch chan<- rxgo.Item, r *eventpb.Event) (interface{}, error) {
+	customer := models.Customer{}
+	//fmt.Println("r.Payload " + r.Payload)
+	json.Unmarshal([]byte(r.Payload), &customer)
+	//fmt.Println(customer)
+	ch <- rxgo.Of(customer)
+	return nil, nil
 }
 
 func newWasmRuntimeInstance(ctx context.Context, path string) (*wasmtime.Instance, error) {
