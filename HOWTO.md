@@ -10,7 +10,6 @@ https://docker-docs.netlify.app/compose/install/
 ```bash
 cd $working_dir
 curl https://raw.githubusercontent.com/machinefi/w3bstream/main/docker-compose.yaml > docker-compose.yaml
-
 docker-compose up -d
 ```
 You are all set.
@@ -169,17 +168,25 @@ http -v get :8888/srv-applet-mgr/v0/strategy/$PROJECTNAME appletID==$APPLETID -A
 ```sh
 export PUBTOKEN=${pub_token}
 export EVENTTYPE=DEFAULT # default means start handler
-echo '{"header":{"event_type":"'$EVENTTYPE'","pub_id":"'$PUBKEY'","pub_time":'`date +%s`',"token":"'$PUBTOKEN'"},"payload":"xxx yyy zzz"}' | http post :8888/srv-applet-mgr/v0/event/$PROJECTNAME
+export EVENTID=`uuidgen`
+echo '{"events":[{"header":{"event_id":"'$EVENTID'","event_type":"'$EVENTTYPE'","pub_id":"'$PUBKEY'","pub_time":'`date +%s`',"token":"'$PUBTOKEN'"},"payload":"xxx yyy zzz"}]}' | http post :8888/srv-applet-mgr/v0/event/$PROJECTNAME
 ```
 
 output like
 
 ```json
 [
-  {
-    "instanceID": "${instance_id}",
-    "resultCode": 0
-  }
+    {
+        "eventID": "78C77DA7-8CE3-4E78-B970-95B685B02409",
+        "projectName": "test",
+        "wasmResults": [
+            {
+                "code": 0,
+                "errMsg": "",
+                "instanceID": "2612094299059956738"
+            }
+        ]
+    }
 ]
 ```
 
