@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"github.com/machinefi/w3bstream/pkg/types/wasm"
 	"os"
 
 	"github.com/machinefi/w3bstream/pkg/errors/status"
@@ -20,7 +21,13 @@ func NewInstance(ctx context.Context, path string, id types.SFID) error {
 		l.Error(err)
 		return status.ExtractFileFailed.StatusErr().WithDesc(err.Error())
 	}
-	i, err := wasmtime.NewInstanceByCode(ctx, id, code)
+
+	//TODO setting config
+	instanceConfig := &wasm.InstanceConfig{
+		KvType: 0,
+	}
+
+	i, err := wasmtime.NewInstanceByCode(ctx, id, code, instanceConfig)
 	if err != nil {
 		l.Error(err)
 		return err

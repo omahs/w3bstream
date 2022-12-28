@@ -31,6 +31,10 @@ type Instance interface {
 	EventConsumer
 }
 
+type InstanceConfig struct {
+	KvType int32
+}
+
 type EventHandleResult struct {
 	InstanceID string           `json:"instanceID"`
 	Rsp        []byte           `json:"-"`
@@ -43,7 +47,8 @@ type EventConsumer interface {
 }
 
 type KVStore interface {
-	Get(string) int32
+	Get(string) ([]byte, error)
+	Set(key string, value []byte) error
 }
 
 type ContextHandler interface {
