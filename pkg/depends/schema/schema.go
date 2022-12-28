@@ -26,10 +26,10 @@ type Schema struct {
 	*mapx.Map[string, *Table] `json:"-"`
 }
 
-func (s *Schema) WithName(name string) { s.Name = name }
+func (s *Schema) WithName(name string) { s.Name = "wasm_project__" + name }
 
 func (s *Schema) DBExecutor(d sqlx.DBExecutor) sqlx.DBExecutor {
-	return d.WithSchema("wasm_project__" + s.Name)
+	return d.WithSchema(s.Name)
 }
 
 func (s *Schema) AddTable(t *Table) {
