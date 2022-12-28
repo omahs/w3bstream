@@ -22,3 +22,8 @@ const (
 )
 
 type InstanceState = enums.InstanceState
+
+const (
+	KVStore_MEM = iota
+	KVStore_REDS
+)
