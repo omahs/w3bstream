@@ -84,7 +84,25 @@ func (v *CurrentAccount) WithAppletContext(ctx context.Context, appletID types.S
 	if err != nil {
 		return ctx, err
 	}
+
+	_ctx, err = v.WithResourceContext(ctx, app.ResourceID)
+	if err != nil {
+		return ctx, err
+	}
+
 	ctx = types.WithApplet(_ctx, app)
+	return ctx, nil
+}
+
+func (v *CurrentAccount) WithResourceContext(ctx context.Context, resID types.SFID) (context.Context, error) {
+	d := types.MustDBExecutorFromContext(ctx)
+
+	res := &models.Resource{RelResource: models.RelResource{ResourceID: resID}}
+	if err := res.FetchByResourceID(d); err != nil {
+		return ctx, status.CheckDatabaseError(err, "GetResourceByResourceID")
+	}
+
+	ctx = types.WithResource(ctx, res)
 	return ctx, nil
 }
 
