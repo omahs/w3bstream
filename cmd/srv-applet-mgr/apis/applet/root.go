@@ -11,4 +11,5 @@ func init() {
 	Root.Register(kit.NewRouter(&CreateApplet{}))
 	Root.Register(kit.NewRouter(&GetApplet{}))
 	Root.Register(kit.NewRouter(&ListApplet{}))
+	Root.Register(kit.NewRouter(&RemoveApplet{}))
 }

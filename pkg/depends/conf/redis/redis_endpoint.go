@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/machinefi/w3bstream/pkg/depends/base/consts"
 
+	"github.com/machinefi/w3bstream/pkg/depends/base/consts"
 	"github.com/machinefi/w3bstream/pkg/depends/base/types"
 )
 

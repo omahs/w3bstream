@@ -1,5 +1,6 @@
 package wasmtime_test
 
+/*
 import (
 	_ "embed"
 	"fmt"
@@ -64,10 +65,8 @@ func init() {
 		idg = confid.MustSFIDGeneratorFromContext(ctx)
 
 		go kit.Run(tasks.Root, global.TaskServer())
-	*/
 }
 
-/*
 func TestInstance_LogWASM(t *testing.T) {
 	i, err := wasmtime.NewInstanceByCode(ctx, idg.MustGenSFID(), wasmLogCode)
 	NewWithT(t).Expect(err).To(BeNil())

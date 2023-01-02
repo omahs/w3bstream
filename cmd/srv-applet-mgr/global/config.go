@@ -31,6 +31,7 @@ var (
 
 	db        = &confpostgres.Endpoint{Database: models.DB}
 	monitordb = &confpostgres.Endpoint{Database: models.MonitorDB}
+	wasmdb    = &confpostgres.Endpoint{Database: models.WasmDB}
 	server    = &confhttp.Server{}
 )
 
@@ -38,6 +39,7 @@ func init() {
 	config := &struct {
 		Postgres   *confpostgres.Endpoint
 		MonitorDB  *confpostgres.Endpoint
+		WasmDB     *confpostgres.Endpoint
 		MqttBroker *confmqtt.Broker
 		Redis      *confredis.Redis
 		Server     *confhttp.Server
@@ -49,6 +51,7 @@ func init() {
 	}{
 		Postgres:   db,
 		MonitorDB:  monitordb,
+		WasmDB:     wasmdb,
 		MqttBroker: &confmqtt.Broker{},
 		Redis:      &confredis.Redis{},
 		Server:     server,
@@ -75,6 +78,8 @@ func init() {
 
 	confhttp.RegisterCheckerBy(
 		config.Postgres,
+		config.MonitorDB,
+		config.WasmDB,
 		config.MqttBroker,
 		config.Redis,
 		config.Server,
@@ -87,6 +92,7 @@ func init() {
 	WithContext = contextx.WithContextCompose(
 		types.WithDBExecutorContext(config.Postgres),
 		types.WithMonitorDBExecutorContext(config.MonitorDB),
+		types.WithWasmDBExecutorContext(config.WasmDB),
 		types.WithPgEndpointContext(config.Postgres),
 		types.WithRedisEndpointContext(config.Redis),
 		types.WithLoggerContext(conflog.Std()),

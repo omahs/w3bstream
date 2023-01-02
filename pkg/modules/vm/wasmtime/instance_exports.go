@@ -11,10 +11,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
-	confredis "github.com/machinefi/w3bstream/pkg/depends/conf/redis"
-	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx"
-
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,6 +21,7 @@ import (
 	"github.com/tidwall/gjson"
 
 	conflog "github.com/machinefi/w3bstream/pkg/depends/conf/log"
+	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx"
 	"github.com/machinefi/w3bstream/pkg/depends/x/mapx"
 	"github.com/machinefi/w3bstream/pkg/types/wasm"
 )
@@ -39,14 +36,12 @@ const (
 
 type (
 	ExportFuncs struct {
-		store   *wasmtime.Store
-		res     *mapx.Map[uint32, []byte]
-		db      map[string][]byte
-		redisDB *confredis.Redis
-		pgDB    sqlx.DBExecutor
-		dbKey   string
-		logger  conflog.Logger
-		cl      *ChainClient
+		store  *wasmtime.Store
+		res    *mapx.Map[uint32, []byte]
+		db     wasm.KVStore
+		pgDB   sqlx.DBExecutor
+		logger conflog.Logger
+		cl     *ChainClient
 	}
 
 	ChainClient struct {
@@ -159,7 +154,11 @@ func (ef *ExportFuncs) SetDB(c *wasmtime.Caller, kAddr, kSize, vAddr, vSize int3
 		"val", string(value),
 	).Info("host.SetDB")
 
-	ef.db[string(key)] = value
+	err = ef.db.Set(string(key), value)
+	if err != nil {
+		ef.logger.Error(err)
+		return int32(wasm.ResultStatusCode_Failed)
+	}
 	return int32(wasm.ResultStatusCode_OK)
 }
 
@@ -379,8 +378,8 @@ func (ef *ExportFuncs) GetDB(c *wasmtime.Caller,
 		return int32(wasm.ResultStatusCode_ResourceNotFound)
 	}
 
-	val, exist := ef.db[string(key)]
-	if !exist || val == nil {
+	val, exist := ef.db.Get(string(key))
+	if exist != nil || val == nil {
 		return int32(wasm.ResultStatusCode_ResourceNotFound)
 	}
 
@@ -388,69 +387,6 @@ func (ef *ExportFuncs) GetDB(c *wasmtime.Caller,
 		"key", string(key),
 		"val", string(val),
 	).Info("host.GetDB")
-
-	if err := ef.copyDataIntoWasm(c, val, vmAddrPtr, vmSizePtr); err != nil {
-		ef.logger.Error(err)
-		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
-	}
-
-	return int32(wasm.ResultStatusCode_OK)
-}
-
-func (ef *ExportFuncs) SetRedisDB(c *wasmtime.Caller, kAddr, kSize, vAddr, vSize int32) int32 {
-	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.store)
-	key, err := read(memBuf, kAddr, kSize)
-	if err != nil {
-		ef.logger.Error(err)
-		return int32(wasm.ResultStatusCode_ResourceNotFound)
-	}
-	value, err := read(memBuf, vAddr, vSize)
-	if err != nil {
-		ef.logger.Error(err)
-		return int32(wasm.ResultStatusCode_ResourceNotFound)
-	}
-
-	ef.logger.WithValues(
-		"key", string(key),
-		"val", string(value),
-	).Info("host.SetRedisDB")
-
-	var args []interface{}
-	args = append(args, ef.dbKey, string(key), string(value))
-	if _, err := ef.redisDB.Exec(&confredis.Cmd{Name: "HSET", Args: args}); err != nil {
-		ef.logger.Error(err)
-		//TODO define error code
-		return int32(wasm.ResultStatusCode_Failed)
-	}
-	return int32(wasm.ResultStatusCode_OK)
-}
-
-func (ef *ExportFuncs) GetRedisDB(c *wasmtime.Caller,
-	kAddr, kSize int32, vmAddrPtr, vmSizePtr int32) int32 {
-	memBuf := c.GetExport("memory").Memory().UnsafeData(ef.store)
-	key, err := read(memBuf, kAddr, kSize)
-	if err != nil {
-		ef.logger.Error(err)
-		return int32(wasm.ResultStatusCode_ResourceNotFound)
-	}
-
-	var args []interface{}
-	args = append(args, ef.dbKey, string(key))
-	result, err := ef.redisDB.Exec(&confredis.Cmd{Name: "HGET", Args: args})
-	if err != nil || result == nil {
-		ef.logger.Error(err)
-		return int32(wasm.ResultStatusCode_ResourceNotFound)
-	}
-	val, err := redis.Bytes(result, nil)
-	if err != nil {
-		ef.logger.Error(err)
-		return int32(wasm.ResultStatusCode_ResourceNotFound)
-	}
-
-	ef.logger.WithValues(
-		"key", string(key),
-		"val", string(val),
-	).Info("host.GetRedisDB")
 
 	if err := ef.copyDataIntoWasm(c, val, vmAddrPtr, vmSizePtr); err != nil {
 		ef.logger.Error(err)

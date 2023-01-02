@@ -1,4 +1,5 @@
 # How to run a w3bstream node with docker
+
 Suppose `$working_dir` is the directory you want to store your data.
 
 ## Install docker-compose
@@ -10,18 +11,21 @@ https://docker-docs.netlify.app/compose/install/
 ```bash
 cd $working_dir
 curl https://raw.githubusercontent.com/machinefi/w3bstream/main/docker-compose.yaml > docker-compose.yaml
-
 docker-compose up -d
 ```
+
 You are all set.
 
 ## Customize settings
+
 ```bash
 cd $working_dir
 curl https://raw.githubusercontent.com/machinefi/w3bstream/main/.env.tmpl > .env
 ```
 
-then modify the corresponding parameters in `.env`, and restart your docker containers
+then modify the corresponding parameters in `.env`, and restart your docker
+containers
+
 ```bash
 docker-compose restart
 ```
@@ -51,12 +55,13 @@ output like
 export TOK=${token}
 ```
 
-### Create your project
+### Create your project without schema
 
 command
 
 ```sh
-echo '{"name":"${project_name}"}' | http :8888/srv-applet-mgr/v0/project -A bearer -a $TOK
+export PROJECTNAME=${project_name}
+echo '{"name":"'$PROJECTNAME"}' | http :8888/srv-applet-mgr/v0/project -A bearer -a $TOK
 ```
 
 output like
@@ -69,6 +74,67 @@ output like
   "projectID": "${project_id}",
   "updatedAt": "2022-10-14T12:50:26.890407+08:00"
 }
+```
+
+### Create project with database schema for wasm db storage
+
+```sh
+export PROJECTSCHEMA='{
+  "tables": [
+    {
+      "name": "tbl",
+      "desc": "test table",
+      "cols": [
+        {
+          "name": "f_username",
+          "constrains": {
+            "datatype": "TEXT",
+            "length": 255,
+            "desc": "user name"
+          }
+        },
+        {
+          "name": "f_gender",
+          "constrains": {
+            "datatype": "UINT8",
+            "length": 255,
+            "default": "0",
+            "desc": "user name"
+          }
+        }
+      ],
+      "keys": [
+        {
+          "name": "ui_username",
+          "isUnique": true,
+          "columnNames": [
+            "f_username"
+          ]
+        }
+      ],
+      "withSoftDeletion": true,
+      "withPrimaryKey": true
+    }
+  ]
+}'
+echo $PROJECTSCHEMA | http post :8888/srv-applet-mgr/v0/project_config/$PROJECTNAME/PROJECT_SCHEMA -A bearer -a $TOK
+```
+
+### Create or update project env vars
+
+```sh
+export PROJECTENV={"values":[["1","one"],["2","two"],["3","three","33"]]}
+echo $PROJECTENV | http post :8888/srv-applet-mgr/v0/project_config/test/PROJECT_ENV -A bearer -a $TOK
+```
+
+> the database for wasm storage is configured by w3bstream server and the name
+> of schema is name of project.
+
+### Review your project config
+
+```shell
+http get :8888/srv-applet-mgr/v0/project_config/$PROJECTNAME/PROJECT_SCHEMA -A bearer -a $TOK
+http get :8888/srv-applet-mgr/v0/project_config/$PROJECTNAME/PROJECT_ENV -A bearer -a $TOK
 ```
 
 ### Build demo wasm scripts
@@ -169,7 +235,8 @@ http -v get :8888/srv-applet-mgr/v0/strategy/$PROJECTNAME appletID==$APPLETID -A
 ```sh
 export PUBTOKEN=${pub_token}
 export EVENTTYPE=DEFAULT # default means start handler
-echo '{"header":{"event_type":"'$EVENTTYPE'","pub_id":"'$PUBKEY'","pub_time":'`date +%s`',"token":"'$PUBTOKEN'"},"payload":"xxx yyy zzz"}' | http post :8888/srv-applet-mgr/v0/event/$PROJECTNAME
+export EVENTID=`uuidgen`
+echo '{"events":[{"header":{"event_id":"'$EVENTID'","event_type":"'$EVENTTYPE'","pub_id":"'$PUBKEY'","pub_time":'`date +%s`',"token":"'$PUBTOKEN'"},"payload":"xxx yyy zzz"}]}' | http post :8888/srv-applet-mgr/v0/event/$PROJECTNAME
 ```
 
 output like
@@ -177,8 +244,15 @@ output like
 ```json
 [
   {
-    "instanceID": "${instance_id}",
-    "resultCode": 0
+    "eventID": "78C77DA7-8CE3-4E78-B970-95B685B02409",
+    "projectName": "test",
+    "wasmResults": [
+      {
+        "code": 0,
+        "errMsg": "",
+        "instanceID": "2612094299059956738"
+      }
+    ]
   }
 ]
 ```
@@ -188,7 +262,9 @@ that means some instance handled this event successfully
 ### Delete project
 
 Be careful.
-It will delete anything in the project, contains applet, publisher, strategy etc.
+It will delete anything in the project, contains applet, publisher, strategy
+etc.
+
 ```sh
 http delete :8888/srv-applet-mgr/v0/project/$PROJECTNAME -A bearer -a $TOK
 ```
@@ -242,7 +318,6 @@ server log like
 }
 ```
 
-
 ### Post blockchain contract event log monitor
 
 ```sh
@@ -253,17 +328,17 @@ output like
 
 ```json
 {
-    "blockCurrent": 16737070,
-    "blockEnd": 16740080,
-    "blockStart": 16737070,
-    "chainID": 4690,
-    "contractAddress": "${contractAddress}",
-    "contractlogID": "2162022028435556",
-    "createdAt": "2022-10-19T21:21:30.220198+08:00",
-    "eventType": "ANY",
-    "projectName": "${projectName}",
-    "topic0": "${topic0}",
-    "updatedAt": "2022-10-19T21:21:30.220198+08:00"
+  "blockCurrent": 16737070,
+  "blockEnd": 16740080,
+  "blockStart": 16737070,
+  "chainID": 4690,
+  "contractAddress": "${contractAddress}",
+  "contractlogID": "2162022028435556",
+  "createdAt": "2022-10-19T21:21:30.220198+08:00",
+  "eventType": "ANY",
+  "projectName": "${projectName}",
+  "topic0": "${topic0}",
+  "updatedAt": "2022-10-19T21:21:30.220198+08:00"
 }
 ```
 
@@ -277,13 +352,13 @@ output like
 
 ```json
 {
-    "chainID": 4690,
-    "chaintxID": "2724127039316068",
-    "createdAt": "2022-10-21T10:35:06.498594+08:00",
-    "eventType": "ANY",
-    "projectName": "testproject",
-    "txAddress": "${txAddress}",
-    "updatedAt": "2022-10-21T10:35:06.498594+08:00"
+  "chainID": 4690,
+  "chaintxID": "2724127039316068",
+  "createdAt": "2022-10-21T10:35:06.498594+08:00",
+  "eventType": "ANY",
+  "projectName": "testproject",
+  "txAddress": "${txAddress}",
+  "updatedAt": "2022-10-21T10:35:06.498594+08:00"
 }
 ```
 
@@ -297,12 +372,12 @@ output like
 
 ```json
 {
-    "chainHeightID": "2727219570933860",
-    "chainID": 4690,
-    "createdAt": "2022-10-21T10:47:23.815552+08:00",
-    "eventType": "ANY",
-    "height": 16910805,
-    "projectName": "testproject",
-    "updatedAt": "2022-10-21T10:47:23.815553+08:00"
+  "chainHeightID": "2727219570933860",
+  "chainID": 4690,
+  "createdAt": "2022-10-21T10:47:23.815552+08:00",
+  "eventType": "ANY",
+  "height": 16910805,
+  "projectName": "testproject",
+  "updatedAt": "2022-10-21T10:47:23.815553+08:00"
 }
 ```

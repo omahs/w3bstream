@@ -2,7 +2,6 @@ package resource
 
 import (
 	"context"
-	"fmt"
 	"mime/multipart"
 
 	"github.com/pkg/errors"
@@ -31,7 +30,6 @@ func FetchOrCreateResource(ctx context.Context, f *multipart.FileHeader) (*model
 	m := &models.Resource{ResourceInfo: models.ResourceInfo{Md5: md5}}
 
 	if err = m.FetchByMd5(d); err != nil && sqlx.DBErr(err).IsNotFound() {
-		l.Error(errors.Wrap(err, fmt.Sprintf("fetch wasm resource by md5 - %s, maybe it doesnt exist.", md5)))
 		m.ResourceID = idg.MustGenSFID()
 		m.ResourceInfo.Path = fullName
 		m.ResourceInfo.Md5 = md5
@@ -52,4 +50,18 @@ func CheckResourceExist(ctx context.Context, path string) bool {
 	defer l.End()
 
 	return IsPathExists(path)
+}
+
+func ListResource(ctx context.Context) ([]models.Resource, error) {
+	res, err := (&models.Resource{}).List(types.MustDBExecutorFromContext(ctx), nil)
+	if err != nil {
+		return nil, status.CheckDatabaseError(err)
+	}
+	return res, err
+}
+
+func DeleteResource(ctx context.Context, resID types.SFID) error {
+	return status.CheckDatabaseError((&models.Resource{
+		RelResource: models.RelResource{ResourceID: resID},
+	}).DeleteByResourceID(types.MustDBExecutorFromContext(ctx)))
 }

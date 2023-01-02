@@ -39,8 +39,12 @@ func ParseDatatypeFromString(s string) (Datatype, error) {
 		return DATATYPE__UINT32, nil
 	case "UINT64":
 		return DATATYPE__UINT64, nil
-	case "STRING":
-		return DATATYPE__STRING, nil
+	case "FLOAT32":
+		return DATATYPE__FLOAT32, nil
+	case "FLOAT64":
+		return DATATYPE__FLOAT64, nil
+	case "TEXT":
+		return DATATYPE__TEXT, nil
 	case "BOOL":
 		return DATATYPE__BOOL, nil
 	case "TIMESTAMP":
@@ -74,8 +78,12 @@ func ParseDatatypeFromLabel(s string) (Datatype, error) {
 		return DATATYPE__UINT32, nil
 	case "UINT64":
 		return DATATYPE__UINT64, nil
-	case "STRING":
-		return DATATYPE__STRING, nil
+	case "FLOAT32":
+		return DATATYPE__FLOAT32, nil
+	case "FLOAT64":
+		return DATATYPE__FLOAT64, nil
+	case "TEXT":
+		return DATATYPE__TEXT, nil
 	case "BOOL":
 		return DATATYPE__BOOL, nil
 	case "TIMESTAMP":
@@ -113,8 +121,12 @@ func (v Datatype) String() string {
 		return "UINT32"
 	case DATATYPE__UINT64:
 		return "UINT64"
-	case DATATYPE__STRING:
-		return "STRING"
+	case DATATYPE__FLOAT32:
+		return "FLOAT32"
+	case DATATYPE__FLOAT64:
+		return "FLOAT64"
+	case DATATYPE__TEXT:
+		return "TEXT"
 	case DATATYPE__BOOL:
 		return "BOOL"
 	case DATATYPE__TIMESTAMP:
@@ -148,8 +160,12 @@ func (v Datatype) Label() string {
 		return "UINT32"
 	case DATATYPE__UINT64:
 		return "UINT64"
-	case DATATYPE__STRING:
-		return "STRING"
+	case DATATYPE__FLOAT32:
+		return "FLOAT32"
+	case DATATYPE__FLOAT64:
+		return "FLOAT64"
+	case DATATYPE__TEXT:
+		return "TEXT"
 	case DATATYPE__BOOL:
 		return "BOOL"
 	case DATATYPE__TIMESTAMP:
@@ -162,7 +178,7 @@ func (v Datatype) TypeName() string {
 }
 
 func (v Datatype) ConstValues() []enum.IntStringerEnum {
-	return []enum.IntStringerEnum{DATATYPE__INT, DATATYPE__INT8, DATATYPE__INT16, DATATYPE__INT32, DATATYPE__INT64, DATATYPE__UINT, DATATYPE__UINT8, DATATYPE__UINT16, DATATYPE__UINT32, DATATYPE__UINT64, DATATYPE__STRING, DATATYPE__BOOL, DATATYPE__TIMESTAMP}
+	return []enum.IntStringerEnum{DATATYPE__INT, DATATYPE__INT8, DATATYPE__INT16, DATATYPE__INT32, DATATYPE__INT64, DATATYPE__UINT, DATATYPE__UINT8, DATATYPE__UINT16, DATATYPE__UINT32, DATATYPE__UINT64, DATATYPE__FLOAT32, DATATYPE__FLOAT64, DATATYPE__TEXT, DATATYPE__BOOL, DATATYPE__TIMESTAMP}
 }
 
 func (v Datatype) MarshalText() ([]byte, error) {

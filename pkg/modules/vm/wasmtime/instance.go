@@ -19,11 +19,12 @@ import (
 	"github.com/machinefi/w3bstream/pkg/depends/x/mapx"
 	"github.com/machinefi/w3bstream/pkg/enums"
 	"github.com/machinefi/w3bstream/pkg/modules/job"
+	"github.com/machinefi/w3bstream/pkg/modules/vm/kvdb"
 	"github.com/machinefi/w3bstream/pkg/types"
 	"github.com/machinefi/w3bstream/pkg/types/wasm"
 )
 
-func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte) (*Instance, error) {
+func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte, insConfig *wasm.InstanceConfig) (*Instance, error) {
 	l := types.MustLoggerFromContext(ctx)
 	rds := types.MustRedisEndpointFromContext(ctx)
 	pg := types.MustDBExecutorFromContext(ctx)
@@ -35,7 +36,17 @@ func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte) (*Instan
 	vmStore := wasmtime.NewStore(vmEngine)
 	linker := wasmtime.NewLinker(vmEngine)
 	res := mapx.New[uint32, []byte]()
-	db := make(map[string][]byte)
+
+	var db wasm.KVStore
+	switch insConfig.KvType {
+	case wasm.KVStore_MEM:
+		db = kvdb.NewMemDB()
+	case wasm.KVStore_REDS:
+		rds = rds.WithPrefix(fmt.Sprintf("ins:%v", id))
+		db = kvdb.NewRedisDB(rds)
+	default:
+		db = kvdb.NewMemDB()
+	}
 
 	cl, err := buildChainClient(l, ctx)
 	if err != nil {
@@ -44,13 +55,11 @@ func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte) (*Instan
 	}
 
 	ef := ExportFuncs{
-		store:   vmStore,
-		res:     res,
-		db:      db,
-		redisDB: rds,
-		pgDB:    pg,
-		dbKey:   fmt.Sprintf("%sins:%v", rds.Prefix, id),
-		cl:      cl,
+		store: vmStore,
+		res:   res,
+		db:    db,
+		pgDB:  pg,
+		cl:    cl,
 		logger: types.MustLoggerFromContext(ctx).WithValues(
 			"@src", "wasm",
 			"@namespace", types.MustProjectFromContext(ctx).Name,
@@ -64,8 +73,6 @@ func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte) (*Instan
 	_ = linker.FuncWrap("env", "ws_log", ef.Log)
 	_ = linker.FuncWrap("env", "ws_send_tx", ef.SendTX)
 	_ = linker.FuncWrap("env", "ws_call_contract", ef.CallContract)
-	_ = linker.FuncWrap("env", "ws_get_redis_db", ef.GetRedisDB)
-	_ = linker.FuncWrap("env", "ws_set_redis_db", ef.SetRedisDB)
 	_ = linker.FuncWrap("env", "ws_set_sql_db", ef.SetSQLDB)
 	_ = linker.FuncWrap("env", "ws_get_sql_db", ef.GetSQLDB)
 
@@ -131,7 +138,7 @@ type Instance struct {
 	vmInstance *wasmtime.Instance
 	res        *mapx.Map[uint32, []byte]
 	handlers   map[string]*wasmtime.Func
-	db         map[string][]byte
+	db         wasm.KVStore
 }
 
 var _ wasm.Instance = (*Instance)(nil)
@@ -237,7 +244,7 @@ func (i *Instance) RmvResource(ctx context.Context, id uint32) {
 }
 
 func (i *Instance) Get(k string) int32 {
-	data := i.db[k]
+	data, _ := i.db.Get(k)
 	var ret int32
 	buf := bytes.NewBuffer(data)
 	binary.Read(buf, binary.LittleEndian, &ret)

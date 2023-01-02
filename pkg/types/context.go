@@ -2,6 +2,7 @@ package types
 
 import (
 	"context"
+
 	"github.com/machinefi/w3bstream/pkg/depends/conf/log"
 	"github.com/machinefi/w3bstream/pkg/depends/conf/mqtt"
 	"github.com/machinefi/w3bstream/pkg/depends/conf/postgres"
@@ -18,6 +19,7 @@ type Context uint8
 type (
 	CtxDBExecutor        struct{} // CtxDBExecutor sqlx.DBExecutor
 	CtxMonitorDBExecutor struct{} // CtxMonitorDBExecutor sqlx.DBExecutor
+	CtxWasmDBExecutor    struct{} // CtxWasmDBExecutor sqlx.DBExecutor
 	CtxPgEndpoint        struct{} // CtxPgEndpoint postgres.Endpoint
 	CtxLogger            struct{} // CtxLogger log.Logger
 	CtxMqttBroker        struct{} // CtxMqttBroker mqtt.Broker
@@ -69,6 +71,27 @@ func MonitorDBExecutorFromContext(ctx context.Context) (sqlx.DBExecutor, bool) {
 
 func MustMonitorDBExecutorFromContext(ctx context.Context) sqlx.DBExecutor {
 	v, ok := MonitorDBExecutorFromContext(ctx)
+	must.BeTrue(ok)
+	return v
+}
+
+func WithWasmDBExecutor(ctx context.Context, v sqlx.DBExecutor) context.Context {
+	return contextx.WithValue(ctx, CtxWasmDBExecutor{}, v)
+}
+
+func WithWasmDBExecutorContext(v sqlx.DBExecutor) contextx.WithContext {
+	return func(ctx context.Context) context.Context {
+		return contextx.WithValue(ctx, CtxWasmDBExecutor{}, v)
+	}
+}
+
+func WasmDBExecutorFromContext(ctx context.Context) (sqlx.DBExecutor, bool) {
+	v, ok := ctx.Value(CtxWasmDBExecutor{}).(sqlx.DBExecutor)
+	return v, ok
+}
+
+func MustWasmDBExecutorFromContext(ctx context.Context) sqlx.DBExecutor {
+	v, ok := WasmDBExecutorFromContext(ctx)
 	must.BeTrue(ok)
 	return v
 }
