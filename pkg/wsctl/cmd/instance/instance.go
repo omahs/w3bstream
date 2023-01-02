@@ -1,6 +1,7 @@
 package instance
 
 import (
+	"fmt"
 	"github.com/machinefi/w3bstream/pkg/wsctl/client"
 	"github.com/machinefi/w3bstream/pkg/wsctl/config"
 	"github.com/spf13/cobra"
@@ -25,4 +26,8 @@ func NewInstanceCmd(client client.Client) *cobra.Command {
 	cmd.AddCommand(newInstanceDeleteCmd(client))
 
 	return cmd
+}
+
+func GetInstanceCmdUrl(endpoint, insId, cmd string) string {
+	return fmt.Sprintf("%s/srv-applet-mgr/v0/deploy/%s/%s", endpoint, insId, cmd)
 }

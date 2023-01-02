@@ -48,8 +48,7 @@ func newInstanceStopCmd(client client.Client) *cobra.Command {
 }
 
 func stop(client client.Client, args []string) (string, error) {
-	insId := args[0]
-	url := fmt.Sprintf("%s/srv-applet-mgr/v0/deploy/%s/STOP", client.Config().Endpoint, insId)
+	url := GetInstanceCmdUrl(client.Config().Endpoint, args[0], "STOP")
 	req, err := http.NewRequest("PUT", url, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to stop instance request")

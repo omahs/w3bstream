@@ -48,8 +48,7 @@ func newInstanceStartCmd(client client.Client) *cobra.Command {
 }
 
 func start(client client.Client, args []string) (string, error) {
-	insId := args[0]
-	url := fmt.Sprintf("%s/srv-applet-mgr/v0/deploy/%s/START", client.Config().Endpoint, insId)
+	url := GetInstanceCmdUrl(client.Config().Endpoint, args[0], "START")
 	req, err := http.NewRequest("PUT", url, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to start instance request")
