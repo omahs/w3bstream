@@ -31,6 +31,7 @@ func NewRuntime(code []byte, abi wasm.ABI) (rt *Runtime, err error) {
 	_ = rt.linker.FuncWrap("env", "ws_call_contract", abi.CallContract)
 	_ = rt.linker.FuncWrap("env", "ws_set_sql_db", abi.SetSQLDB)
 	_ = rt.linker.FuncWrap("env", "ws_get_sql_db", abi.GetSQLDB)
+	_ = rt.linker.FuncWrap("env", "ws_get_env", abi.GetEnv)
 	_ = rt.linker.DefineWasi()
 	rt.store.SetWasi(wasmtime.NewWasiConfig())
 

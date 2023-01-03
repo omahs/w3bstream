@@ -30,6 +30,8 @@ func WithInstanceRuntimeContext(parent context.Context) (context.Context, error)
 		return nil, err
 	}
 	ctx = types.WithProject(ctx, prj)
+	ctx = wasm.WithEnvPrefix(ctx, prj.Name)
+	ctx = wasm.WithRedisPrefix(ctx, prj.Name)
 	res := &models.Resource{RelResource: models.RelResource{ResourceID: app.ResourceID}}
 	if err := res.FetchByResourceID(d); err != nil {
 		return nil, err

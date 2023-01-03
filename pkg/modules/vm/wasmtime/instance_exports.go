@@ -33,6 +33,7 @@ func NewExportFuncs(ctx context.Context, code []byte) (*ExportFuncs, error) {
 	ef.kvs = wasm.MustKVStoreFromContext(ctx)
 	ef.db = wasm.MustDBExecutorFromContext(ctx)
 	ef.log = wasm.MustLoggerFromContext(ctx)
+	ef.env = wasm.MustEnvFromContext(ctx)
 	ef.cl, _ = wasm.ChainClientFromContext(ctx)
 
 	return ef, nil
@@ -41,6 +42,7 @@ func NewExportFuncs(ctx context.Context, code []byte) (*ExportFuncs, error) {
 type ExportFuncs struct {
 	*Runtime
 	res *mapx.Map[uint32, []byte]
+	env *wasm.Env
 	kvs wasm.KVStore
 	db  sqlx.DBExecutor
 	log conflog.Logger
@@ -238,6 +240,24 @@ func (ef *ExportFuncs) CallContract(offset, size int32, vmAddrPtr, vmSizePtr int
 	if err = ef.Copy(data, vmAddrPtr, vmSizePtr); err != nil {
 		ef.log.Error(err)
 		return wasm.ResultStatusCode_Failed
+	}
+	return int32(wasm.ResultStatusCode_OK)
+}
+
+func (ef *ExportFuncs) GetEnv(kAddr, kSize int32, vmAddrPtr, vmSizePtr int32) int32 {
+	key, err := ef.Read(kAddr, kSize)
+	if err != nil {
+		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
+	}
+
+	val, ok := ef.env.Get(string(key))
+	if !ok {
+		return int32(wasm.ResultStatusCode_EnvKeyNotFound)
+	}
+
+	if err = ef.Copy([]byte(val), vmAddrPtr, vmSizePtr); err != nil {
+		ef.log.Error(err)
+		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
 	}
 	return int32(wasm.ResultStatusCode_OK)
 }

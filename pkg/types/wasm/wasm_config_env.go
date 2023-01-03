@@ -18,26 +18,29 @@ func (env *Env) ConfigType() enums.ConfigType {
 }
 
 func (env *Env) WithContext(ctx context.Context) context.Context {
-	return WithEnv(ctx, env)
-}
-
-func (env *Env) Init(prefix string) {
+	prefix, _ := EnvPrefixFromContext(ctx)
+	if prefix != "" {
+		prefix = prefix + "__"
+	}
 	env.prefix = prefix
-	env.values = mapx.New[string, string]()
 
+	if env.values == nil {
+		env.values = mapx.New[string, string]()
+	}
 	for _, pair := range env.Values {
 		if pair[0] != "" {
-			env.values.Store(prefix+"__"+pair[0], pair[1])
+			env.Set(pair[0], pair[1])
 		}
 	}
+	return WithEnv(ctx, env)
 }
 
 func (env *Env) Prefix() string { return env.prefix }
 
 func (env *Env) Get(k string) (v string, exists bool) {
-	return env.values.Load(env.prefix + "__" + k)
+	return env.values.Load(env.prefix + k)
 }
 
 func (env *Env) Set(k, v string) {
-	env.values.Store(env.prefix+"__"+k, v)
+	env.values.Store(env.prefix+k, v)
 }

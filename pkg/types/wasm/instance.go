@@ -66,6 +66,7 @@ type ABI interface {
 	CallContract(offset, size, vmAddrPtr, vmSizePtr int32) int32
 	SetSQLDB(addr, size int32) int32
 	GetSQLDB(addr, size, vmAddrPtr, vmSizePtr int32) int32
+	GetEnv(kAddr, kSize, vmAddrPtr, vmSizePtr int32) int32
 }
 
 type Memory interface {

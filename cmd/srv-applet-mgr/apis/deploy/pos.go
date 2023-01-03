@@ -25,7 +25,5 @@ func (r *CreateInstance) Output(ctx context.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = r.ChainClient.Build(); err != nil {
-	}
 	return deploy.CreateInstance(ctx, &r.CreateInstanceReq)
 }
