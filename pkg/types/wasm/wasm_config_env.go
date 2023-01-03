@@ -1,7 +1,10 @@
-package project
+package wasm
 
 import (
+	"context"
+
 	"github.com/machinefi/w3bstream/pkg/depends/x/mapx"
+	"github.com/machinefi/w3bstream/pkg/enums"
 )
 
 type Env struct {
@@ -10,7 +13,15 @@ type Env struct {
 	Values [][2]string `json:"values"`
 }
 
-func (env *Env) init(prefix string) {
+func (env *Env) ConfigType() enums.ConfigType {
+	return enums.CONFIG_TYPE__PROJECT_ENV
+}
+
+func (env *Env) WithContext(ctx context.Context) context.Context {
+	return WithEnv(ctx, env)
+}
+
+func (env *Env) Init(prefix string) {
 	env.prefix = prefix
 	env.values = mapx.New[string, string]()
 

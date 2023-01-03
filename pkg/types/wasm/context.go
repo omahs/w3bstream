@@ -1,0 +1,146 @@
+package wasm
+
+import (
+	"context"
+
+	"github.com/machinefi/w3bstream/pkg/depends/conf/log"
+	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx"
+	"github.com/machinefi/w3bstream/pkg/depends/x/contextx"
+	"github.com/machinefi/w3bstream/pkg/depends/x/mapx"
+	"github.com/machinefi/w3bstream/pkg/depends/x/misc/must"
+)
+
+type (
+	CtxDBExecutor      struct{}
+	CtxKVStore         struct{}
+	CtxLogger          struct{}
+	CtxEnv             struct{}
+	CtxChainClient     struct{}
+	CtxRuntimeResource struct{}
+)
+
+func WithDBExecutor(ctx context.Context, v sqlx.DBExecutor) context.Context {
+	return contextx.WithValue(ctx, CtxDBExecutor{}, v)
+}
+
+func WithDBExecutorContext(v sqlx.DBExecutor) contextx.WithContext {
+	return func(ctx context.Context) context.Context {
+		return contextx.WithValue(ctx, CtxDBExecutor{}, v)
+	}
+}
+
+func DBExecutorFromContext(ctx context.Context) (sqlx.DBExecutor, bool) {
+	v, ok := ctx.Value(CtxDBExecutor{}).(sqlx.DBExecutor)
+	return v, ok
+}
+
+func MustDBExecutorFromContext(ctx context.Context) sqlx.DBExecutor {
+	v, ok := DBExecutorFromContext(ctx)
+	must.BeTrue(ok)
+	return v
+}
+
+func WithKVStore(ctx context.Context, v KVStore) context.Context {
+	return contextx.WithValue(ctx, CtxKVStore{}, v)
+}
+
+func WithKVStoreContext(v KVStore) contextx.WithContext {
+	return func(ctx context.Context) context.Context {
+		return contextx.WithValue(ctx, CtxKVStore{}, v)
+	}
+}
+
+func KVStoreFromContext(ctx context.Context) (KVStore, bool) {
+	v, ok := ctx.Value(CtxKVStore{}).(KVStore)
+	return v, ok
+}
+
+func MustKVStoreFromContext(ctx context.Context) KVStore {
+	v, ok := KVStoreFromContext(ctx)
+	must.BeTrue(ok)
+	return v
+}
+
+func WithLogger(ctx context.Context, v log.Logger) context.Context {
+	return contextx.WithValue(ctx, CtxLogger{}, v)
+}
+
+func WithLoggerContext(v log.Logger) contextx.WithContext {
+	return func(ctx context.Context) context.Context {
+		return contextx.WithValue(ctx, CtxLogger{}, v)
+	}
+}
+
+func LoggerFromContext(ctx context.Context) (log.Logger, bool) {
+	v, ok := ctx.Value(CtxLogger{}).(log.Logger)
+	return v, ok
+}
+
+func MustLoggerFromContext(ctx context.Context) log.Logger {
+	v, ok := LoggerFromContext(ctx)
+	must.BeTrue(ok)
+	return v
+}
+
+func WithEnv(ctx context.Context, v *Env) context.Context {
+	return contextx.WithValue(ctx, CtxEnv{}, v)
+}
+
+func WithEnvContext(v *Env) contextx.WithContext {
+	return func(ctx context.Context) context.Context {
+		return contextx.WithValue(ctx, CtxEnv{}, v)
+	}
+}
+
+func EnvFromContext(ctx context.Context) (*Env, bool) {
+	v, ok := ctx.Value(CtxEnv{}).(*Env)
+	return v, ok
+}
+
+func MustEnvFromContext(ctx context.Context) *Env {
+	v, ok := EnvFromContext(ctx)
+	must.BeTrue(ok)
+	return v
+}
+
+func WithChainClient(ctx context.Context, v *ChainClient) context.Context {
+	return contextx.WithValue(ctx, CtxChainClient{}, v)
+}
+
+func WithChainClientContext(v *ChainClient) contextx.WithContext {
+	return func(ctx context.Context) context.Context {
+		return contextx.WithValue(ctx, CtxChainClient{}, v)
+	}
+}
+
+func ChainClientFromContext(ctx context.Context) (*ChainClient, bool) {
+	v, ok := ctx.Value(CtxChainClient{}).(*ChainClient)
+	return v, ok
+}
+
+func MustChainClientFromContext(ctx context.Context) *ChainClient {
+	v, ok := ChainClientFromContext(ctx)
+	must.BeTrue(ok)
+	return v
+}
+
+func WithRuntimeResource(ctx context.Context, v *mapx.Map[uint32, []byte]) context.Context {
+	return contextx.WithValue(ctx, CtxRuntimeResource{}, v)
+}
+
+func WithRuntimeResourceContext(v *mapx.Map[uint32, []byte]) contextx.WithContext {
+	return func(ctx context.Context) context.Context {
+		return contextx.WithValue(ctx, CtxRuntimeResource{}, v)
+	}
+}
+
+func RuntimeResourceFromContext(ctx context.Context) (*mapx.Map[uint32, []byte], bool) {
+	v, ok := ctx.Value(CtxRuntimeResource{}).(*mapx.Map[uint32, []byte])
+	return v, ok
+}
+
+func MustRuntimeResourceFromContext(ctx context.Context) *mapx.Map[uint32, []byte] {
+	v, ok := RuntimeResourceFromContext(ctx)
+	must.BeTrue(ok)
+	return v
+}

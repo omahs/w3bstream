@@ -6,7 +6,9 @@ import (
 	"github.com/machinefi/w3bstream/cmd/srv-applet-mgr/apis/middleware"
 	"github.com/machinefi/w3bstream/pkg/depends/kit/httptransport/httpx"
 	"github.com/machinefi/w3bstream/pkg/enums"
-	"github.com/machinefi/w3bstream/pkg/modules/project"
+	"github.com/machinefi/w3bstream/pkg/modules/config"
+	"github.com/machinefi/w3bstream/pkg/types"
+	"github.com/machinefi/w3bstream/pkg/types/wasm"
 )
 
 type GetProjectSchema struct {
@@ -24,7 +26,12 @@ func (r *GetProjectSchema) Output(ctx context.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return project.GetProjectSchema(ctx)
+	prj := types.MustProjectFromContext(ctx)
+	scm := &wasm.Schema{}
+	if err = config.GetConfigValue(ctx, prj.ProjectID, scm); err != nil {
+		return nil, err
+	}
+	return scm, nil
 }
 
 type GetProjectEnv struct {
@@ -42,5 +49,10 @@ func (r *GetProjectEnv) Output(ctx context.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return project.GetProjectEnv(ctx)
+	prj := types.MustProjectFromContext(ctx)
+	env := &wasm.Env{}
+	if err = config.GetConfigValue(ctx, prj.ProjectID, env); err != nil {
+		return nil, err
+	}
+	return env, nil
 }

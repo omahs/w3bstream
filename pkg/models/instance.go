@@ -9,7 +9,7 @@ import (
 // Instance database model instance
 // @def primary                     ID
 // @def unique_index UI_instance_id InstanceID
-// @def index        I_applet_id    AppletID
+// @def unique_index UI_applet_id   AppletID
 //
 //go:generate toolkit gen model Instance --database DB
 type Instance struct {

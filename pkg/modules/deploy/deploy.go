@@ -2,8 +2,10 @@ package deploy
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/machinefi/w3bstream/pkg/depends/kit/sqlx"
+	"github.com/machinefi/w3bstream/pkg/modules/config"
+	"github.com/machinefi/w3bstream/pkg/types/wasm"
 	"github.com/pkg/errors"
 
 	confid "github.com/machinefi/w3bstream/pkg/depends/conf/id"
@@ -11,76 +13,82 @@ import (
 	"github.com/machinefi/w3bstream/pkg/enums"
 	"github.com/machinefi/w3bstream/pkg/errors/status"
 	"github.com/machinefi/w3bstream/pkg/models"
-	"github.com/machinefi/w3bstream/pkg/modules/resource"
 	"github.com/machinefi/w3bstream/pkg/modules/vm"
 	"github.com/machinefi/w3bstream/pkg/types"
 )
+
+type CreateInstanceReq struct {
+	Cache       *wasm.Cache       `json:"cache,omitempty"`
+	ChainClient *wasm.ChainClient `json:"chainClient,omitempty"`
+}
 
 type CreateInstanceRsp struct {
 	InstanceID    types.SFID          `json:"instanceID"`
 	InstanceState enums.InstanceState `json:"instanceState"`
 }
 
-func CreateInstance(ctx context.Context, path string, appletID types.SFID) (*CreateInstanceRsp, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+func CreateInstance(ctx context.Context, r *CreateInstanceReq) (*CreateInstanceRsp, error) {
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	idg := confid.MustSFIDGeneratorFromContext(ctx)
 
-	m := &models.Instance{RelApplet: models.RelApplet{AppletID: appletID}}
+	app := types.MustAppletFromContext(ctx)
+	res := types.MustResourceFromContext(ctx)
+	ins := &models.Instance{
+		RelInstance:  models.RelInstance{InstanceID: idg.MustGenSFID()},
+		RelApplet:    models.RelApplet{AppletID: app.AppletID},
+		InstanceInfo: models.InstanceInfo{State: enums.INSTANCE_STATE__CREATED},
+	}
 
 	_, l = l.Start(ctx, "CreateInstance")
 	defer l.End()
 
-	exists, err := GetInstanceByAppletID(ctx, appletID)
+	_ctx := context.Background()
+	err := sqlx.NewTasks(d).With(
+		func(db sqlx.DBExecutor) error {
+			if err := ins.Create(db); err != nil {
+				return err
+			}
+			ctx = types.WithInstance(ctx, ins)
+			return nil
+		},
+		func(db sqlx.DBExecutor) error {
+			if r.Cache == nil {
+				r.Cache = wasm.DefaultCache()
+			}
+			return config.CreateConfig(ctx, ins.InstanceID, r.Cache)
+		},
+		func(db sqlx.DBExecutor) error {
+			if r.ChainClient != nil {
+				return config.CreateConfig(ctx, ins.InstanceID, r.ChainClient)
+			}
+			return nil
+		},
+		func(db sqlx.DBExecutor) error {
+			var _err error
+			_ctx, _err = WithInstanceRuntimeContext(ctx)
+			return _err
+		},
+		func(db sqlx.DBExecutor) error {
+			return vm.NewInstance(_ctx, res.Path, ins.InstanceID)
+		},
+	).Do()
+
 	if err != nil {
-		l.Error(err)
-		return nil, status.CheckDatabaseError(err, "GetInstanceByAppletID")
-	}
-	for _, i := range exists {
-		if err := ControlInstance(ctx, i.InstanceID, enums.DEPLOY_CMD__REMOVE); err != nil {
-			l.Error(err)
-			return nil, err
-		}
-	}
-
-	m.InstanceID = idg.MustGenSFID()
-
-	mApp := &models.Applet{RelApplet: models.RelApplet{AppletID: appletID}}
-	if err := mApp.FetchByAppletID(d); err != nil {
 		l.Error(err)
 		return nil, status.CheckDatabaseError(err)
 	}
-	mPrj := &models.Project{RelProject: models.RelProject{ProjectID: mApp.ProjectID}}
-	if err := mPrj.FetchByProjectID(d); err != nil {
-		l.Error(err)
-		return nil, status.CheckDatabaseError(err)
-	}
 
-	ctx = types.WithProject(ctx, mPrj)
-	ctx = types.WithApplet(ctx, mApp)
-	err = vm.NewInstance(ctx, path, m.InstanceID)
-	if err != nil {
-		l.Error(err)
-		return nil, err
-	}
-	m.State = enums.INSTANCE_STATE__CREATED
-
-	if err = m.Create(d); err != nil {
-		l.Error(err)
-		_ = vm.DelInstance(ctx, m.InstanceID)
-		return nil, err
-	}
-	l.WithValues("instance", m.InstanceID).Info("created")
-
+	l.WithValues("instance", ins.InstanceID).Info("created")
 	return &CreateInstanceRsp{
-		InstanceID:    m.InstanceID,
-		InstanceState: m.State,
+		InstanceID:    ins.InstanceID,
+		InstanceState: ins.State,
 	}, nil
 }
 
 func ControlInstance(ctx context.Context, instanceID types.SFID, cmd enums.DeployCmd) (err error) {
 	var (
-		d = types.MustDBExecutorFromContext(ctx)
+		d = types.MustMgrDBExecutorFromContext(ctx)
 		l = types.MustLoggerFromContext(ctx)
 		m = &models.Instance{RelInstance: models.RelInstance{InstanceID: instanceID}}
 	)
@@ -151,7 +159,7 @@ func ControlInstance(ctx context.Context, instanceID types.SFID, cmd enums.Deplo
 		}
 		return nil
 	default:
-		m.State = enums.INSTANCE_STATE__LOAD_FAIL
+		m.State = enums.INSTANCE_STATE_UNKNOWN
 		if err = m.UpdateByInstanceID(d); err != nil {
 			l.Error(err)
 			return status.CheckDatabaseError(err, "UpdateInstanceByInstanceID")
@@ -161,7 +169,7 @@ func ControlInstance(ctx context.Context, instanceID types.SFID, cmd enums.Deplo
 }
 
 func GetInstanceByInstanceID(ctx context.Context, instanceID types.SFID) (*models.Instance, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	m := &models.Instance{RelInstance: models.RelInstance{InstanceID: instanceID}}
 
@@ -189,7 +197,7 @@ func GetInstanceByInstanceID(ctx context.Context, instanceID types.SFID) (*model
 }
 
 func GetInstanceByAppletID(ctx context.Context, appletID types.SFID) (ret []models.Instance, err error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	m := &models.Instance{}
 
 	err = d.QueryAndScan(
@@ -203,7 +211,7 @@ func GetInstanceByAppletID(ctx context.Context, appletID types.SFID) (ret []mode
 }
 
 func StartInstances(ctx context.Context) error {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	m := &models.Instance{}
 
@@ -212,55 +220,41 @@ func StartInstances(ctx context.Context) error {
 
 	list, err := m.List(d, nil)
 	if err != nil {
+		l.Error(err)
 		return err
 	}
-	for _, i := range list {
-		l = l.WithValues("instance", i.InstanceID, "applet", i.AppletID)
-
-		mApp := &models.Applet{RelApplet: models.RelApplet{AppletID: i.AppletID}}
-		if err := mApp.FetchByAppletID(d); err != nil {
-			l.Warn(err)
-			continue
-		}
-		mPrj := &models.Project{RelProject: models.RelProject{ProjectID: mApp.ProjectID}}
-		if err := mPrj.FetchByProjectID(d); err != nil {
-			l.Warn(err)
-			continue
-		}
-
-		ctx = types.WithProject(ctx, mPrj)
-		ctx = types.WithApplet(ctx, mApp)
+	for i := range list {
+		ins := &list[i]
 		cmd := enums.DEPLOY_CMD_UNKNOWN
+		l = l.WithValues(
+			"instance", ins.InstanceID,
+			"applet", ins.AppletID,
+			"status", ins.State,
+		)
 
-		mResource := &models.Resource{RelResource: models.RelResource{ResourceID: mApp.ResourceID}}
-		if err := mResource.FetchByResourceID(d); err != nil {
-			l.Warn(err)
+		_ctx, err := WithInstanceRuntimeContext(types.WithInstance(ctx, ins))
+		if err != nil {
+			l.Error(err)
 			continue
 		}
-		if isExist := resource.CheckResourceExist(ctx, mResource.ResourceInfo.Path); !isExist {
-			err = errors.New(fmt.Sprintf("The file %s does not exist.", mResource.ResourceInfo.Path))
-		} else {
-			err = vm.NewInstance(ctx, mResource.Path, i.InstanceID)
+		res := types.MustResourceFromContext(_ctx)
+		if err = vm.NewInstance(_ctx, res.Path, ins.InstanceID); err != nil {
+			l.Error(err)
+			ins.State = enums.INSTANCE_STATE_UNKNOWN
 		}
-
-		if err != nil {
-			l.Warn(err)
-		} else {
-			switch i.State {
-			case enums.INSTANCE_STATE__CREATED:
-				l.Info("created")
-				continue
-			case enums.INSTANCE_STATE__STARTED:
-				cmd = enums.DEPLOY_CMD__START
-			case enums.INSTANCE_STATE__STOPPED:
-				cmd = enums.DEPLOY_CMD__STOP
-			case enums.INSTANCE_STATE__LOAD_FAIL:
-				cmd = enums.DEPLOY_CMD__START
-			}
+		switch ins.State {
+		case enums.INSTANCE_STATE__CREATED:
+			continue
+		case enums.INSTANCE_STATE__STARTED:
+			cmd = enums.DEPLOY_CMD__START
+		case enums.INSTANCE_STATE__STOPPED:
+			cmd = enums.DEPLOY_CMD__STOP
+		default:
+			cmd = enums.DEPLOY_CMD_UNKNOWN
 		}
 
 		l = l.WithValues("cmd", cmd)
-		if err = ControlInstance(ctx, i.InstanceID, cmd); err != nil {
+		if err = ControlInstance(ctx, ins.InstanceID, cmd); err != nil {
 			l.Error(err)
 		}
 	}

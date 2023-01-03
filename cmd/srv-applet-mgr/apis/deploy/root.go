@@ -23,7 +23,7 @@ func init() {
 }
 
 func validateByInstance(ctx context.Context, instanceID types.SFID) (*models.Instance, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	ca := middleware.CurrentAccountFromContext(ctx)
 
 	mInstance := &models.Instance{RelInstance: models.RelInstance{InstanceID: instanceID}}

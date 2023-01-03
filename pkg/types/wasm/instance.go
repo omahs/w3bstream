@@ -31,10 +31,6 @@ type Instance interface {
 	EventConsumer
 }
 
-type InstanceConfig struct {
-	KvType int32
-}
-
 type EventHandleResult struct {
 	InstanceID string           `json:"instanceID"`
 	Rsp        []byte           `json:"-"`
@@ -60,28 +56,17 @@ type ContextHandler interface {
 	SetInstance(Instance)
 }
 
-type ABI struct {
-	Imports  ImportsHandler
-	Instance Instance
+type ABI interface {
+	Log(loglevel, ptr, size int32) int32
+	GetData(rid, vmAddrPtr, vmSizePtr int32) int32
+	SetData(rid, addr, size int32) int32
+	GetDB(kAddr, kSize, vmAddrPtr, vmSizePtr int32) int32
+	SetDB(kAddr, kSize, vAddr, vSize int32) int32
+	SendTX(offset, size int32) int32
+	CallContract(offset, size, vmAddrPtr, vmSizePtr int32) int32
+	SetSQLDB(addr, size int32) int32
+	GetSQLDB(addr, size, vmAddrPtr, vmSizePtr int32) int32
 }
-
-func (a *ABI) Name() string { return NameVersion }
-
-func (a *ABI) GetExports() ExportsHandler { return a }
-
-func (a *ABI) GetImports() ImportsHandler { return a.Imports }
-
-func (a *ABI) SetImports(i ImportsHandler) { a.Imports = i }
-
-func (a *ABI) GetInstance() Instance { return a.Instance }
-
-func (a *ABI) SetInstance(i Instance) { a.Instance = i }
-
-func (a *ABI) Start() {}
-
-func (a *ABI) Alloc() {}
-
-func (a *ABI) Free() {}
 
 type Memory interface {
 	Read(context.Context, uint32, uint32) ([]byte, error)

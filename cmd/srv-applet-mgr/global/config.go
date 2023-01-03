@@ -47,7 +47,6 @@ func init() {
 		Logger     *conflog.Log
 		StdLogger  conflog.Logger
 		UploadConf *types.UploadConfig
-		EthClient  *types.ETHClientConfig
 	}{
 		Postgres:   db,
 		MonitorDB:  monitordb,
@@ -59,7 +58,6 @@ func init() {
 		Logger:     &conflog.Log{},
 		StdLogger:  conflog.Std(),
 		UploadConf: &types.UploadConfig{},
-		EthClient:  &types.ETHClientConfig{},
 	}
 
 	name := os.Getenv(consts.EnvProjectName)
@@ -90,7 +88,7 @@ func init() {
 	worker = mq.NewTaskWorker(tasks, mq.WithWorkerCount(3), mq.WithChannel(name))
 
 	WithContext = contextx.WithContextCompose(
-		types.WithDBExecutorContext(config.Postgres),
+		types.WithMgrDBExecutorContext(config.Postgres),
 		types.WithMonitorDBExecutorContext(config.MonitorDB),
 		types.WithWasmDBExecutorContext(config.WasmDB),
 		types.WithPgEndpointContext(config.Postgres),
@@ -100,7 +98,6 @@ func init() {
 		types.WithUploadConfigContext(config.UploadConf),
 		confid.WithSFIDGeneratorContext(confid.MustNewSFIDGenerator()),
 		confjwt.WithConfContext(config.Jwt),
-		types.WithETHClientConfigContext(config.EthClient),
 		types.WithTaskWorkerContext(worker),
 		types.WithTaskBoardContext(mq.NewTaskBoard(tasks)),
 	)

@@ -5,15 +5,15 @@ import (
 
 	"github.com/machinefi/w3bstream/cmd/srv-applet-mgr/apis/middleware"
 	"github.com/machinefi/w3bstream/pkg/depends/kit/httptransport/httpx"
-	"github.com/machinefi/w3bstream/pkg/depends/schema"
 	"github.com/machinefi/w3bstream/pkg/enums"
 	"github.com/machinefi/w3bstream/pkg/modules/project"
+	"github.com/machinefi/w3bstream/pkg/types/wasm"
 )
 
 type CreateProjectSchema struct {
 	httpx.MethodPost
-	ProjectName   string `name:"projectName" in:"path"`
-	schema.Schema `in:"body"`
+	ProjectName string `name:"projectName" in:"path"`
+	wasm.Schema `in:"body"`
 }
 
 func (r *CreateProjectSchema) Path() string {
@@ -33,7 +33,7 @@ func (r *CreateProjectSchema) Output(ctx context.Context) (interface{}, error) {
 type CreateOrUpdateProjectEnv struct {
 	httpx.MethodPost
 	ProjectName string `name:"projectName" in:"path"`
-	project.Env `in:"body"`
+	wasm.Env    `in:"body"`
 }
 
 func (r *CreateOrUpdateProjectEnv) Path() string {

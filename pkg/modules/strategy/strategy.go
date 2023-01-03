@@ -23,7 +23,7 @@ type InstanceHandler struct {
 
 func FindStrategyInstances(ctx context.Context, prjName string, eventType string) ([]*InstanceHandler, error) {
 	l := types.MustLoggerFromContext(ctx)
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 
 	_, l = l.Start(ctx, "FindStrategyInstances")
 	defer l.End()
@@ -98,7 +98,7 @@ type CreateStrategyReq struct {
 }
 
 func CreateStrategy(ctx context.Context, projectID types.SFID, r *CreateStrategyBatchReq) (err error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	idg := confid.MustSFIDGeneratorFromContext(ctx)
 
@@ -130,7 +130,7 @@ func CreateStrategy(ctx context.Context, projectID types.SFID, r *CreateStrategy
 }
 
 func UpdateStrategy(ctx context.Context, strategyID types.SFID, r *CreateStrategyReq) (err error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	m := models.Strategy{RelStrategy: models.RelStrategy{StrategyID: strategyID}}
 
@@ -158,7 +158,7 @@ func UpdateStrategy(ctx context.Context, strategyID types.SFID, r *CreateStrateg
 }
 
 func GetStrategyByStrategyID(ctx context.Context, strategyID types.SFID) (*models.Strategy, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	m := models.Strategy{RelStrategy: models.RelStrategy{StrategyID: strategyID}}
 
 	err := m.FetchByStrategyID(d)
@@ -242,7 +242,7 @@ type detail struct {
 
 func ListStrategy(ctx context.Context, r *ListStrategyReq) (*ListStrategyRsp, error) {
 	var (
-		d    = types.MustDBExecutorFromContext(ctx)
+		d    = types.MustMgrDBExecutorFromContext(ctx)
 		ret  = &ListStrategyRsp{}
 		err  error
 		cond = r.Condition()
@@ -330,7 +330,7 @@ type RemoveStrategyReq struct {
 
 func RemoveStrategy(ctx context.Context, r *RemoveStrategyReq) error {
 	var (
-		d         = types.MustDBExecutorFromContext(ctx)
+		d         = types.MustMgrDBExecutorFromContext(ctx)
 		mStrategy = &models.Strategy{}
 		err       error
 	)

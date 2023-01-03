@@ -1,6 +1,8 @@
 package types
 
-import "github.com/machinefi/w3bstream/pkg/depends/base/types"
+import (
+	"github.com/machinefi/w3bstream/pkg/depends/base/types"
+)
 
 type UploadConfig struct {
 	Root          string `env:""`
@@ -14,11 +16,6 @@ func (c *UploadConfig) SetDefault() {
 	if c.FileSizeLimit == 0 {
 		c.FileSizeLimit = 100 * 1024 * 1024
 	}
-}
-
-type ETHClientConfig struct {
-	PrivateKey    string `env:""`
-	ChainEndpoint string `env:""`
 }
 
 type (

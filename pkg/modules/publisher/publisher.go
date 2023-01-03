@@ -21,7 +21,7 @@ type CreatePublisherReq struct {
 }
 
 func CreatePublisher(ctx context.Context, projectID types.SFID, r *CreatePublisherReq) (*models.Publisher, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	j := jwt.MustConfFromContext(ctx)
 	idg := confid.MustSFIDGeneratorFromContext(ctx)
@@ -51,7 +51,7 @@ func CreatePublisher(ctx context.Context, projectID types.SFID, r *CreatePublish
 }
 
 func GetPublisherByPublisherKey(ctx context.Context, publisherKey string) (*models.Publisher, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	m := &models.Publisher{
 		PublisherInfo: models.PublisherInfo{Key: publisherKey},
@@ -95,7 +95,7 @@ type ListPublisherRsp struct {
 func ListPublisher(ctx context.Context, r *ListPublisherReq) (*ListPublisherRsp, error) {
 	var (
 		l = types.MustLoggerFromContext(ctx)
-		d = types.MustDBExecutorFromContext(ctx)
+		d = types.MustMgrDBExecutorFromContext(ctx)
 
 		ret        = &ListPublisherRsp{}
 		err        error
@@ -155,7 +155,7 @@ type RemovePublisherReq struct {
 
 func RemovePublisher(ctx context.Context, r *RemovePublisherReq) error {
 	var (
-		d          = types.MustDBExecutorFromContext(ctx)
+		d          = types.MustMgrDBExecutorFromContext(ctx)
 		l          = types.MustLoggerFromContext(ctx)
 		mPublisher = &models.Publisher{}
 		err        error
@@ -179,7 +179,7 @@ func RemovePublisher(ctx context.Context, r *RemovePublisherReq) error {
 }
 
 func UpdatePublisher(ctx context.Context, publisherID types.SFID, r *CreatePublisherReq) (err error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	j := jwt.MustConfFromContext(ctx)
 	m := models.Publisher{RelPublisher: models.RelPublisher{PublisherID: publisherID}}
@@ -216,7 +216,7 @@ func UpdatePublisher(ctx context.Context, publisherID types.SFID, r *CreatePubli
 
 func GetPublisherByPubKeyAndProjectName(ctx context.Context, pubKey, prjName string) (*models.Publisher, error) {
 	l := types.MustLoggerFromContext(ctx)
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 
 	_, l = l.Start(ctx, "GetPublisherByPubKeyAndProjectID")
 	defer l.End()

@@ -33,7 +33,7 @@ type InfoApplet struct {
 }
 
 func CreateApplet(ctx context.Context, projectID types.SFID, r *CreateAppletReq) (mApplet *models.Applet, err error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	idg := confid.MustSFIDGeneratorFromContext(ctx)
 
@@ -90,7 +90,7 @@ type UpdateAppletReq struct {
 }
 
 func UpdateApplet(ctx context.Context, appletID types.SFID, r *UpdateAppletReq) (err error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	mApplet := &models.Applet{RelApplet: models.RelApplet{AppletID: appletID}}
 	idg := confid.MustSFIDGeneratorFromContext(ctx)
@@ -204,7 +204,7 @@ type ListAppletRsp struct {
 func ListApplets(ctx context.Context, r *ListAppletReq) (*ListAppletRsp, error) {
 	applet := &models.Applet{}
 
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 
 	_, l = l.Start(ctx, "ListApplets")
@@ -230,7 +230,7 @@ type RemoveAppletReq struct {
 
 func RemoveApplet(ctx context.Context, r *RemoveAppletReq) error {
 	var (
-		d         = types.MustDBExecutorFromContext(ctx)
+		d         = types.MustMgrDBExecutorFromContext(ctx)
 		l         = types.MustLoggerFromContext(ctx)
 		mApplet   = &models.Applet{}
 		mInstance = &models.Instance{}
@@ -299,7 +299,7 @@ type GetAppletRsp struct {
 }
 
 func GetAppletByAppletID(ctx context.Context, appletID types.SFID) (*GetAppletRsp, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	mApplet := &models.Applet{RelApplet: models.RelApplet{AppletID: appletID}}
 	mResource := &models.Resource{}

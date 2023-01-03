@@ -19,7 +19,7 @@ type CreateAccountByUsernameReq struct {
 }
 
 func CreateAccountByUsername(ctx context.Context, r *CreateAccountByUsernameReq) (*models.Account, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	g := confid.MustSFIDGeneratorFromContext(ctx)
 
@@ -55,7 +55,7 @@ type UpdatePasswordReq struct {
 }
 
 func UpdateAccountPassword(ctx context.Context, accountID types.SFID, password string) error {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 
 	m := &models.Account{RelAccount: models.RelAccount{AccountID: accountID}}
@@ -79,7 +79,7 @@ func UpdateAccountPassword(ctx context.Context, accountID types.SFID, password s
 }
 
 func ValidateAccountByLogin(ctx context.Context, username, password string) (*models.Account, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 
 	m := &models.Account{}
@@ -100,7 +100,7 @@ func ValidateAccountByLogin(ctx context.Context, username, password string) (*mo
 }
 
 func GetAccountByAccountID(ctx context.Context, accountID types.SFID) (*models.Account, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 
 	m := &models.Account{RelAccount: models.RelAccount{AccountID: accountID}}
@@ -116,7 +116,7 @@ func GetAccountByAccountID(ctx context.Context, accountID types.SFID) (*models.A
 }
 
 func CreateAdminIfNotExist(ctx context.Context) (string, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	idg := confid.MustSFIDGeneratorFromContext(ctx)
 

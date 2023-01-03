@@ -14,10 +14,8 @@ import (
 	"github.com/machinefi/w3bstream/pkg/models"
 )
 
-type Context uint8
-
 type (
-	CtxDBExecutor        struct{} // CtxDBExecutor sqlx.DBExecutor
+	CtxMgrDBExecutor     struct{} // CtxMgrDBExecutor sqlx.DBExecutor
 	CtxMonitorDBExecutor struct{} // CtxMonitorDBExecutor sqlx.DBExecutor
 	CtxWasmDBExecutor    struct{} // CtxWasmDBExecutor sqlx.DBExecutor
 	CtxPgEndpoint        struct{} // CtxPgEndpoint postgres.Endpoint
@@ -25,31 +23,31 @@ type (
 	CtxMqttBroker        struct{} // CtxMqttBroker mqtt.Broker
 	CtxRedisEndpoint     struct{} // CtxRedisEndpoint redis.Redis
 	CtxUploadConfig      struct{} // CtxUploadConfig UploadConfig
-	CtxEthClient         struct{} // CtxEthClient ETHClientConfig
 	CtxTaskWorker        struct{}
 	CtxTaskBoard         struct{}
 	CtxProject           struct{}
 	CtxApplet            struct{}
+	CtxResource          struct{}
 	CtxInstance          struct{}
 )
 
-func WithDBExecutor(ctx context.Context, v sqlx.DBExecutor) context.Context {
-	return contextx.WithValue(ctx, CtxDBExecutor{}, v)
+func WithMgrDBExecutor(ctx context.Context, v sqlx.DBExecutor) context.Context {
+	return contextx.WithValue(ctx, CtxMgrDBExecutor{}, v)
 }
 
-func WithDBExecutorContext(v sqlx.DBExecutor) contextx.WithContext {
+func WithMgrDBExecutorContext(v sqlx.DBExecutor) contextx.WithContext {
 	return func(ctx context.Context) context.Context {
-		return contextx.WithValue(ctx, CtxDBExecutor{}, v)
+		return contextx.WithValue(ctx, CtxMgrDBExecutor{}, v)
 	}
 }
 
-func DBExecutorFromContext(ctx context.Context) (sqlx.DBExecutor, bool) {
-	v, ok := ctx.Value(CtxDBExecutor{}).(sqlx.DBExecutor)
+func MgrDBExecutorFromContext(ctx context.Context) (sqlx.DBExecutor, bool) {
+	v, ok := ctx.Value(CtxMgrDBExecutor{}).(sqlx.DBExecutor)
 	return v, ok
 }
 
-func MustDBExecutorFromContext(ctx context.Context) sqlx.DBExecutor {
-	v, ok := DBExecutorFromContext(ctx)
+func MustMgrDBExecutorFromContext(ctx context.Context) sqlx.DBExecutor {
+	v, ok := MgrDBExecutorFromContext(ctx)
 	must.BeTrue(ok)
 	return v
 }
@@ -197,27 +195,6 @@ func MustUploadConfigFromContext(ctx context.Context) *UploadConfig {
 	return v
 }
 
-func WithETHClientConfig(ctx context.Context, v *ETHClientConfig) context.Context {
-	return contextx.WithValue(ctx, CtxEthClient{}, v)
-}
-
-func WithETHClientConfigContext(v *ETHClientConfig) contextx.WithContext {
-	return func(ctx context.Context) context.Context {
-		return contextx.WithValue(ctx, CtxEthClient{}, v)
-	}
-}
-
-func ETHClientConfigFromContext(ctx context.Context) (*ETHClientConfig, bool) {
-	v, ok := ctx.Value(CtxEthClient{}).(*ETHClientConfig)
-	return v, ok
-}
-
-func MustETHClientConfigFromContext(ctx context.Context) *ETHClientConfig {
-	v, ok := ETHClientConfigFromContext(ctx)
-	must.BeTrue(ok)
-	return v
-}
-
 func WithTaskBoard(ctx context.Context, tb *mq.TaskBoard) context.Context {
 	return contextx.WithValue(ctx, CtxTaskBoard{}, tb)
 }
@@ -300,6 +277,28 @@ func AppletFromContext(ctx context.Context) (*models.Applet, bool) {
 
 func MustAppletFromContext(ctx context.Context) *models.Applet {
 	v, ok := AppletFromContext(ctx)
+	must.BeTrue(ok)
+	return v
+}
+
+func WithResource(ctx context.Context, r *models.Resource) context.Context {
+	_r := *r
+	return contextx.WithValue(ctx, CtxResource{}, &_r)
+}
+
+func WithResourceContext(r *models.Resource) contextx.WithContext {
+	return func(ctx context.Context) context.Context {
+		return WithResource(ctx, r)
+	}
+}
+
+func ResourceFromContext(ctx context.Context) (*models.Resource, bool) {
+	v, ok := ctx.Value(CtxResource{}).(*models.Resource)
+	return v, ok
+}
+
+func MustResourceFromContext(ctx context.Context) *models.Resource {
+	v, ok := ResourceFromContext(ctx)
 	must.BeTrue(ok)
 	return v
 }

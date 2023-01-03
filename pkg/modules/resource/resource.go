@@ -14,7 +14,7 @@ import (
 )
 
 func FetchOrCreateResource(ctx context.Context, f *multipart.FileHeader) (*models.Resource, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	idg := confid.MustSFIDGeneratorFromContext(ctx)
 
@@ -53,7 +53,7 @@ func CheckResourceExist(ctx context.Context, path string) bool {
 }
 
 func ListResource(ctx context.Context) ([]models.Resource, error) {
-	res, err := (&models.Resource{}).List(types.MustDBExecutorFromContext(ctx), nil)
+	res, err := (&models.Resource{}).List(types.MustMgrDBExecutorFromContext(ctx), nil)
 	if err != nil {
 		return nil, status.CheckDatabaseError(err)
 	}
@@ -63,5 +63,5 @@ func ListResource(ctx context.Context) ([]models.Resource, error) {
 func DeleteResource(ctx context.Context, resID types.SFID) error {
 	return status.CheckDatabaseError((&models.Resource{
 		RelResource: models.RelResource{ResourceID: resID},
-	}).DeleteByResourceID(types.MustDBExecutorFromContext(ctx)))
+	}).DeleteByResourceID(types.MustMgrDBExecutorFromContext(ctx)))
 }

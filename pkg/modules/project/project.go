@@ -27,7 +27,7 @@ type CreateProjectReq struct {
 }
 
 func CreateProject(ctx context.Context, r *CreateProjectReq, hdl mq.OnMessage) (*models.Project, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	a := middleware.CurrentAccountFromContext(ctx)
 	idg := confid.MustSFIDGeneratorFromContext(ctx)
@@ -132,7 +132,7 @@ type detail struct {
 
 func ListProject(ctx context.Context, r *ListProjectReq) (*ListProjectRsp, error) {
 	var (
-		d = types.MustDBExecutorFromContext(ctx)
+		d = types.MustMgrDBExecutorFromContext(ctx)
 		l = types.MustLoggerFromContext(ctx)
 
 		ret  = &ListProjectRsp{}
@@ -229,7 +229,7 @@ func ListProject(ctx context.Context, r *ListProjectReq) (*ListProjectRsp, error
 }
 
 func GetProjectByProjectID(ctx context.Context, prjID types.SFID) (*Detail, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	ca := middleware.CurrentAccountFromContext(ctx)
 
@@ -267,7 +267,7 @@ func GetProjectByProjectID(ctx context.Context, prjID types.SFID) (*Detail, erro
 }
 
 func GetProjectByProjectName(ctx context.Context, prjName string) (*models.Project, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	l := types.MustLoggerFromContext(ctx)
 	m := &models.Project{ProjectName: models.ProjectName{Name: prjName}}
 
@@ -290,7 +290,7 @@ func DeleteProject(_ context.Context, _ string) error {
 
 func InitChannels(ctx context.Context, hdl mq.OnMessage) error {
 	l := types.MustLoggerFromContext(ctx)
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	m := &models.Project{}
 
 	_, l = l.Start(ctx, "InitChannels")
@@ -317,7 +317,7 @@ func InitChannels(ctx context.Context, hdl mq.OnMessage) error {
 
 func RemoveProjectByProjectID(ctx context.Context, prjID types.SFID) error {
 	var (
-		d          = types.MustDBExecutorFromContext(ctx)
+		d          = types.MustMgrDBExecutorFromContext(ctx)
 		l          = types.MustLoggerFromContext(ctx)
 		mProject   = &models.Project{}
 		mStrategy  = &models.Strategy{}

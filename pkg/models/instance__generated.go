@@ -57,14 +57,6 @@ func (*Instance) PrimaryKey() []string {
 	}
 }
 
-func (*Instance) Indexes() builder.Indexes {
-	return builder.Indexes{
-		"i_applet_id": []string{
-			"AppletID",
-		},
-	}
-}
-
 func (m *Instance) IndexFieldNames() []string {
 	return []string{
 		"AppletID",
@@ -75,11 +67,19 @@ func (m *Instance) IndexFieldNames() []string {
 
 func (*Instance) UniqueIndexes() builder.Indexes {
 	return builder.Indexes{
+		"ui_applet_id": []string{
+			"AppletID",
+			"DeletedAt",
+		},
 		"ui_instance_id": []string{
 			"InstanceID",
 			"DeletedAt",
 		},
 	}
+}
+
+func (*Instance) UniqueIndexUIAppletID() string {
+	return "ui_applet_id"
 }
 
 func (*Instance) UniqueIndexUIInstanceID() string {
@@ -216,6 +216,25 @@ func (m *Instance) FetchByID(db sqlx.DBExecutor) error {
 	return err
 }
 
+func (m *Instance) FetchByAppletID(db sqlx.DBExecutor) error {
+	tbl := db.T(m)
+	err := db.QueryAndScan(
+		builder.Select(nil).
+			From(
+				tbl,
+				builder.Where(
+					builder.And(
+						tbl.ColByFieldName("AppletID").Eq(m.AppletID),
+						tbl.ColByFieldName("DeletedAt").Eq(m.DeletedAt),
+					),
+				),
+				builder.Comment("Instance.FetchByAppletID"),
+			),
+		m,
+	)
+	return err
+}
+
 func (m *Instance) FetchByInstanceID(db sqlx.DBExecutor) error {
 	tbl := db.T(m)
 	err := db.QueryAndScan(
@@ -264,6 +283,37 @@ func (m *Instance) UpdateByIDWithFVs(db sqlx.DBExecutor, fvs builder.FieldValues
 func (m *Instance) UpdateByID(db sqlx.DBExecutor, zeros ...string) error {
 	fvs := builder.FieldValueFromStructByNoneZero(m, zeros...)
 	return m.UpdateByIDWithFVs(db, fvs)
+}
+
+func (m *Instance) UpdateByAppletIDWithFVs(db sqlx.DBExecutor, fvs builder.FieldValues) error {
+
+	if _, ok := fvs["UpdatedAt"]; !ok {
+		fvs["UpdatedAt"] = types.Timestamp{Time: time.Now()}
+	}
+	tbl := db.T(m)
+	res, err := db.Exec(
+		builder.Update(tbl).
+			Where(
+				builder.And(
+					tbl.ColByFieldName("AppletID").Eq(m.AppletID),
+					tbl.ColByFieldName("DeletedAt").Eq(m.DeletedAt),
+				),
+				builder.Comment("Instance.UpdateByAppletIDWithFVs"),
+			).
+			Set(tbl.AssignmentsByFieldValues(fvs)...),
+	)
+	if err != nil {
+		return err
+	}
+	if affected, _ := res.RowsAffected(); affected == 0 {
+		return m.FetchByAppletID(db)
+	}
+	return nil
+}
+
+func (m *Instance) UpdateByAppletID(db sqlx.DBExecutor, zeros ...string) error {
+	fvs := builder.FieldValueFromStructByNoneZero(m, zeros...)
+	return m.UpdateByAppletIDWithFVs(db, fvs)
 }
 
 func (m *Instance) UpdateByInstanceIDWithFVs(db sqlx.DBExecutor, fvs builder.FieldValues) error {
@@ -346,6 +396,49 @@ func (m *Instance) SoftDeleteByID(db sqlx.DBExecutor) error {
 					tbl.ColByFieldName("DeletedAt").Eq(m.DeletedAt),
 				),
 				builder.Comment("Instance.SoftDeleteByID"),
+			).
+			Set(tbl.AssignmentsByFieldValues(fvs)...),
+	)
+	return err
+}
+
+func (m *Instance) DeleteByAppletID(db sqlx.DBExecutor) error {
+	tbl := db.T(m)
+	_, err := db.Exec(
+		builder.Delete().
+			From(
+				tbl,
+				builder.Where(
+					builder.And(
+						tbl.ColByFieldName("AppletID").Eq(m.AppletID),
+						tbl.ColByFieldName("DeletedAt").Eq(m.DeletedAt),
+					),
+				),
+				builder.Comment("Instance.DeleteByAppletID"),
+			),
+	)
+	return err
+}
+
+func (m *Instance) SoftDeleteByAppletID(db sqlx.DBExecutor) error {
+	tbl := db.T(m)
+	fvs := builder.FieldValues{}
+
+	if _, ok := fvs["DeletedAt"]; !ok {
+		fvs["DeletedAt"] = types.Timestamp{Time: time.Now()}
+	}
+
+	if _, ok := fvs["UpdatedAt"]; !ok {
+		fvs["UpdatedAt"] = types.Timestamp{Time: time.Now()}
+	}
+	_, err := db.Exec(
+		builder.Update(db.T(m)).
+			Where(
+				builder.And(
+					tbl.ColByFieldName("AppletID").Eq(m.AppletID),
+					tbl.ColByFieldName("DeletedAt").Eq(m.DeletedAt),
+				),
+				builder.Comment("Instance.SoftDeleteByAppletID"),
 			).
 			Set(tbl.AssignmentsByFieldValues(fvs)...),
 	)

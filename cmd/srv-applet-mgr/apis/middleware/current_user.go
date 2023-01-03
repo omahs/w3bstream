@@ -46,7 +46,7 @@ type CurrentAccount struct {
 
 func (v *CurrentAccount) WithProjectContextByName(ctx context.Context, prjName string) (context.Context, error) {
 	a := CurrentAccountFromContext(ctx)
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	m := &models.Project{ProjectName: models.ProjectName{Name: prjName}}
 	if err := m.FetchByName(d); err != nil {
 		return ctx, status.CheckDatabaseError(err, "GetProjectByName")
@@ -60,7 +60,7 @@ func (v *CurrentAccount) WithProjectContextByName(ctx context.Context, prjName s
 
 func (v *CurrentAccount) WithProjectContextByID(ctx context.Context, prjID types.SFID) (context.Context, error) {
 	a := CurrentAccountFromContext(ctx)
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	m := &models.Project{RelProject: models.RelProject{ProjectID: prjID}}
 	if err := m.FetchByProjectID(d); err != nil {
 		return ctx, status.CheckDatabaseError(err, "GetProjectByProjectID")
@@ -73,7 +73,7 @@ func (v *CurrentAccount) WithProjectContextByID(ctx context.Context, prjID types
 }
 
 func (v *CurrentAccount) WithAppletContext(ctx context.Context, appletID types.SFID) (context.Context, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 
 	app := &models.Applet{RelApplet: models.RelApplet{AppletID: appletID}}
 	if err := app.FetchByAppletID(d); err != nil {
@@ -95,7 +95,7 @@ func (v *CurrentAccount) WithAppletContext(ctx context.Context, appletID types.S
 }
 
 func (v *CurrentAccount) WithResourceContext(ctx context.Context, resID types.SFID) (context.Context, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 
 	res := &models.Resource{RelResource: models.RelResource{ResourceID: resID}}
 	if err := res.FetchByResourceID(d); err != nil {
@@ -107,7 +107,7 @@ func (v *CurrentAccount) WithResourceContext(ctx context.Context, resID types.SF
 }
 
 func (v *CurrentAccount) WithInstanceContext(ctx context.Context, instanceID types.SFID) (context.Context, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 
 	ins := &models.Instance{RelInstance: models.RelInstance{InstanceID: instanceID}}
 	if err := ins.FetchByInstanceID(d); err != nil {
@@ -124,7 +124,7 @@ func (v *CurrentAccount) WithInstanceContext(ctx context.Context, instanceID typ
 // ValidateProjectPerm
 // Deprecated: Use WithProjectContextByID instead
 func (v *CurrentAccount) ValidateProjectPerm(ctx context.Context, prjID types.SFID) (*models.Project, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	a := CurrentAccountFromContext(ctx)
 	m := &models.Project{RelProject: models.RelProject{ProjectID: prjID}}
 
@@ -140,7 +140,7 @@ func (v *CurrentAccount) ValidateProjectPerm(ctx context.Context, prjID types.SF
 // ValidateProjectPermByPrjName
 // Deprecated: Use WithProjectContextByName instead
 func (v *CurrentAccount) ValidateProjectPermByPrjName(ctx context.Context, projectName string) (*models.Project, error) {
-	d := types.MustDBExecutorFromContext(ctx)
+	d := types.MustMgrDBExecutorFromContext(ctx)
 	a := CurrentAccountFromContext(ctx)
 	m := &models.Project{ProjectName: models.ProjectName{Name: projectName}}
 
