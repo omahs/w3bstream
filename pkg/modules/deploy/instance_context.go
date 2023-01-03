@@ -46,9 +46,6 @@ func WithInstanceRuntimeContext(parent context.Context) (context.Context, error)
 	if _, ok := wasm.KVStoreFromContext(ctx); !ok {
 		ctx = wasm.DefaultCache().WithContext(ctx)
 	}
-	if _, ok := wasm.ChainClientFromContext(ctx); !ok {
-		ctx = wasm.DefaultCache().WithContext(ctx)
-	}
 	ctx = wasm.WithLogger(ctx, types.MustLoggerFromContext(ctx).WithValues(
 		"@src", "wasm",
 		"@prj", prj.Name,
