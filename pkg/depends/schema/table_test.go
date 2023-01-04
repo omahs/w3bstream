@@ -13,7 +13,7 @@ func ExampleTable_CreateIfNotExists() {
 	}
 
 	// Output:
-	// CREATE TABLE IF NOT EXISTS demo.tbl (
+	// CREATE TABLE IF NOT EXISTS wasm_project__demo.tbl (
 	// 	f_id bigserial NOT NULL,
 	// 	f_username character varying(255) NOT NULL,
 	// 	f_gender integer NOT NULL DEFAULT '0'::integer,
@@ -21,5 +21,5 @@ func ExampleTable_CreateIfNotExists() {
 	// 	f_updated_at bigint NOT NULL DEFAULT '0'::bigint,
 	// 	f_deleted_at bigint NOT NULL DEFAULT '0'::bigint
 	// );
-	// CREATE UNIQUE INDEX tbl_ui_username ON demo.tbl (f_username,f_deleted_at);
+	// CREATE UNIQUE INDEX tbl_ui_username ON wasm_project__demo.tbl (f_username,f_deleted_at);
 }

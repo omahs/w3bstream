@@ -152,5 +152,5 @@ func ExampleSchema_CreateSchema() {
 	fmt.Println(q.Ex(context.Background()).Query())
 
 	// Output:
-	// CREATE SCHEMA IF NOT EXISTS demo;
+	// CREATE SCHEMA IF NOT EXISTS wasm_project__demo;
 }
