@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - "mqtttls"
+      - "pgp_sign"
     tags:
       - "v*"
 
@@ -23,7 +23,7 @@ jobs:
           - os: macos-latest
             artifact_name: pub_client-darwin-amd64
             applet_mgr_name: srv-applet-mgr-linux-amd64
-            
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
