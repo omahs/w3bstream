@@ -239,5 +239,5 @@ func GetPublisherByPubKeyAndProjectName(ctx context.Context, pubKey, prjName str
 		l.Error(errors.New("no project permission"))
 		return nil, status.NoProjectPermission
 	}
-	return nil, nil
+	return pub, nil
 }
