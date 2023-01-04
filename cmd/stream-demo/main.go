@@ -48,7 +48,7 @@ func main() {
 
 	go kit.Run(tasks.Root, global.TaskServer())
 
-	path := "/Users/hunhun/project_go/iotex/w3bstream/_examples/stream/stream.wasm"
+	path := "./_examples/stream/stream.wasm"
 
 	// new wasm runtime instance
 	ins, err := newWasmRuntimeInstance(ctx, path)
@@ -144,7 +144,7 @@ func main() {
 		// 3.Get & parse data
 		if code < 0 {
 			log.Error(errors.New(fmt.Sprintf("%v %s error.", item.V.(models.Customer), "groupByAge")))
-			//TODO error 怎么处理
+			//TODO handle exceptions
 			return "error"
 		}
 
@@ -152,7 +152,7 @@ func main() {
 		defer ins.RmvResource(ctx, uint32(code))
 		if !ok {
 			log.Error(errors.New("groupByAge result not found"))
-			//TODO error 怎么处理
+			//TODO handle exceptions
 			return "error"
 		}
 

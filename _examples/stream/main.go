@@ -73,7 +73,7 @@ func _mapTax(rid uint32) int32 {
 	easyjson.Unmarshal(message, &customer)
 	//common.Log(e.Error())
 
-	//TODO 会报错？为什么
+	//TODO generate an error
 	//common.Log(fmt.Sprintf("get mapTax customer %d", customer.Age))
 
 	id := uuid.New().ID() % (^uint32(0) >> 1)
