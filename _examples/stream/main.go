@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	common "github.com/machinefi/w3bstream/_examples/wasm_common_go"
+	"github.com/machinefi/w3bstream/stream/model"
+	"github.com/mailru/easyjson"
 	"github.com/tidwall/gjson"
 )
 
@@ -26,19 +28,22 @@ func _start(rid uint32) int32 {
 		}
 	}()
 
-	common.Log(fmt.Sprintf("get resource all %v: `%s`", rid, string(message)))
+	common.Log(fmt.Sprintf("get start resource all %v: %s", rid, string(message)))
 
-	customer := string(message)
-
-	age := gjson.Get(customer, "age").Int()
-	common.Log(fmt.Sprintf("get resource age %v: %d", rid, age))
+	customer := model.Customer{}
+	easyjson.Unmarshal(message, &customer)
+	age := customer.Age
+	//customer := string(message)
+	//
+	//age := gjson.Get(customer, "age").Int()
+	common.Log(fmt.Sprintf("get start resource age %v: %d", rid, age))
 
 	id := uuid.New().ID() % (^uint32(0) >> 1)
 	if age >= 18 {
-		common.Log(fmt.Sprintf("###### 大于等于 18 %v: `%s`", rid, string(message)))
+		common.Log(fmt.Sprintf("filter the Customer's age more than 18 %v: `%s`", rid, string(message)))
 		common.SetDataByRID(id, "true")
 	} else if age < 18 {
-		common.Log(fmt.Sprintf("&&&&&& 小于 18 %v: `%s`", rid, string(message)))
+		common.Log(fmt.Sprintf("filter the Customer's age less than 18 %v: `%s`", rid, string(message)))
 		common.SetDataByRID(id, "false")
 	}
 
@@ -61,17 +66,27 @@ func _mapTax(rid uint32) int32 {
 		}
 	}()
 
-	common.Log(fmt.Sprintf("get resource all %v: `%s`", rid, string(message)))
+	common.Log(fmt.Sprintf("get mapTax resource all %v: %s", rid, string(message)))
 
-	customer := string(message)
+	customer := model.Customer{}
+	//e := customer.UnmarshalJSON(message)
+	easyjson.Unmarshal(message, &customer)
+	//common.Log(e.Error())
 
-	age := gjson.Get(customer, "age").Int()
-	common.Log(fmt.Sprintf("get resource age %v: %d", rid, age))
+	//TODO 会报错？为什么
+	//common.Log(fmt.Sprintf("get mapTax customer %d", customer.Age))
 
 	id := uuid.New().ID() % (^uint32(0) >> 1)
-	if age >= 30 {
-		common.Log(fmt.Sprintf("###### 大于等于 30 %v: `%s`", rid, string(message)))
-		common.SetDataByRID(id, "true")
+	if customer.Age >= 30 {
+		common.Log(fmt.Sprintf("the Customer's age is more than 30 %v: %s", rid, string(message)))
+		customer.TaxNumber = "19832106687"
+	}
+
+	if b, err := easyjson.Marshal(customer); err != nil {
+		common.Log(fmt.Sprintf("%v marshal error", customer))
+		return -1
+	} else {
+		common.SetDataByRID(id, string(b))
 	}
 
 	return int32(id)
@@ -93,12 +108,12 @@ func _groupByAge(rid uint32) int32 {
 		}
 	}()
 
-	common.Log(fmt.Sprintf("get resource all %v: `%s`", rid, string(message)))
+	common.Log(fmt.Sprintf("get groupByAge resource all %v: `%s`", rid, string(message)))
 
 	customer := string(message)
 
 	city := gjson.Get(customer, "city").String()
-	common.Log(fmt.Sprintf("get resource age %v: %s", rid, city))
+	common.Log(fmt.Sprintf("get groupByAge resource city %v: %s", rid, city))
 
 	id := uuid.New().ID() % (^uint32(0) >> 1)
 	common.SetDataByRID(id, city)

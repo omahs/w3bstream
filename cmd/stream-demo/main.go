@@ -57,25 +57,25 @@ func main() {
 	}
 	id := vm.AddInstance(ctx, ins)
 
-	//TODO mirco server 不需要mgr instance
+	//TODO mirco server, Does need mgr instance?
 	err = vm.StartInstance(ctx, id)
 	defer vm.StopInstance(ctx, id)
 
 	observable := rxgo.FromChannel(ch).Filter(func(i interface{}) bool {
 		res := false
 
-		// 1.序列化
+		// 1.Serialize
 		b, err := json.Marshal(i.(models.Customer))
 		if err != nil {
 			log.Error(err)
 		}
 
-		// 2.调用wasm code
+		// 2.Invoke wasm code
 		//res = i.(Customer).Age >= 18
 		code := ins.HandleEvent(ctx, "start", b).Code
 		log.Info(fmt.Sprintf("start wasm code %d", code))
 
-		// 3.get/parse data
+		// 3.Get & parse data
 		if code < 0 {
 			//TODO filter cant send error event
 			log.Error(errors.New(fmt.Sprintf("%v filter error.", i.(models.Customer))))
@@ -100,20 +100,20 @@ func main() {
 			log.Warn(errors.New("the value does not support"))
 		}
 
-		// 4.return data
+		// 4.Return data
 		return res
 	}).Map(func(c context.Context, i interface{}) (interface{}, error) {
-		// 1.序列化
+		// 1.Serialize
 		b, err := json.Marshal(i.(models.Customer))
 		if err != nil {
 			log.Error(err)
 		}
 
-		// 2.调用wasm code
+		// 2.Invoke wasm code
 		code := ins.HandleEvent(ctx, "mapTax", b).Code
 		log.Info(fmt.Sprintf("mapTax wasm code %d", code))
 
-		// 3.get/parse data
+		// 3.Get & parse data
 		if code < 0 {
 			log.Error(errors.New(fmt.Sprintf("%v %s error.", i.(models.Customer), "mapTax")))
 			return nil, errors.New(fmt.Sprintf("%v %s error.", i.(models.Customer), "mapTax"))
@@ -131,17 +131,17 @@ func main() {
 
 		return customer, err
 	}).GroupByDynamic(func(item rxgo.Item) string {
-		// 1.序列化
+		// 1.Serialize
 		b, err := json.Marshal(item.V.(models.Customer))
 		if err != nil {
 			log.Error(err)
 		}
 
-		// 2.调用wasm code
+		// 2.Invoke wasm code
 		code := ins.HandleEvent(ctx, "groupByAge", b).Code
 		log.Info(fmt.Sprintf("groupByAge wasm code %d", code))
 
-		// 3.get/parse data
+		// 3.Get & parse data
 		if code < 0 {
 			log.Error(errors.New(fmt.Sprintf("%v %s error.", item.V.(models.Customer), "groupByAge")))
 			//TODO error 怎么处理
