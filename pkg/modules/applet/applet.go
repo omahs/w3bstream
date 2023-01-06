@@ -224,8 +224,7 @@ func ListApplets(ctx context.Context, r *ListAppletReq) (*ListAppletRsp, error) 
 }
 
 type RemoveAppletReq struct {
-	ProjectID types.SFID `in:"path"  name:"projectID"`
-	AppletID  types.SFID `in:"path"  name:"appletID"`
+	AppletID types.SFID `in:"path"  name:"appletID"`
 }
 
 func RemoveApplet(ctx context.Context, r *RemoveAppletReq) error {

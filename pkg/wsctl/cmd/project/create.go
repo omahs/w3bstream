@@ -2,7 +2,6 @@ package project
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -12,6 +11,7 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/machinefi/w3bstream/pkg/wsctl/client"
+	"github.com/machinefi/w3bstream/pkg/wsctl/cmd/utils"
 	"github.com/machinefi/w3bstream/pkg/wsctl/config"
 )
 
@@ -39,43 +39,27 @@ func newProjectCreateCmd(client client.Client) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
-			result, err := create(client, args)
-			if err != nil {
+			if err := create(cmd, client, args); err != nil {
 				return errors.Wrap(err, fmt.Sprintf("problem create project %+v", args))
 			}
-			cmd.Println(result)
+			cmd.Println(cases.Title(language.Und).String(args[0]) + " project created successfully ")
 			return nil
 		},
 	}
 }
 
-type projectResp struct {
-	Code uint64 `json:"code"`
-	Desc string `json:"desc"`
-}
-
-func create(client client.Client, args []string) (string, error) {
+func create(cmd *cobra.Command, client client.Client, args []string) error {
 	body := fmt.Sprintf(`{"name":"%s"}`, args[0])
 	url := fmt.Sprintf("%s/srv-applet-mgr/v0/project", client.Config().Endpoint)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(body)))
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create project request")
+		return errors.Wrap(err, "failed to create project request")
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Call(url, req)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create project")
+		return errors.Wrap(err, "failed to create project")
 	}
-	defer resp.Body.Close()
-
-	cr := projectResp{}
-	if err := json.NewDecoder(resp.Body).Decode(&cr); err != nil {
-		errors.Wrap(err, "failed to decode project responce")
-	}
-	if cr.Code != 0 {
-		return "", fmt.Errorf("failed to create project, error code: %d, error message: %s", cr.Code, cr.Desc)
-	}
-
-	return cases.Title(language.Und).String(args[0]) + " project created successfully ", nil
+	return utils.PrintResponse(cmd, resp)
 }

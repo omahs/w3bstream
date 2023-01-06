@@ -282,12 +282,6 @@ func GetProjectByProjectName(ctx context.Context, prjName string) (*models.Proje
 	return m, nil
 }
 
-func DeleteProject(_ context.Context, _ string) error {
-	// TODO
-	// same as RemoveProjectByProjectID?  by zhiwei
-	return nil
-}
-
 func InitChannels(ctx context.Context, hdl mq.OnMessage) error {
 	l := types.MustLoggerFromContext(ctx)
 	d := types.MustDBExecutorFromContext(ctx)

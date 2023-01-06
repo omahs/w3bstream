@@ -13,11 +13,15 @@ type RemoveApplet struct {
 	applet.RemoveAppletReq
 }
 
-func (r *RemoveApplet) Path() string { return "/:projectID/:appletID" }
+func (r *RemoveApplet) Path() string { return "/:appletID" }
 
 func (r *RemoveApplet) Output(ctx context.Context) (interface{}, error) {
 	a := middleware.CurrentAccountFromContext(ctx)
-	if _, err := a.ValidateProjectPerm(ctx, r.ProjectID); err != nil {
+	app, err := applet.GetAppletByAppletID(ctx, r.AppletID)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := a.ValidateProjectPerm(ctx, app.ProjectID); err != nil {
 		return nil, err
 	}
 

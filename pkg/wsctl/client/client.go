@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"sync/atomic"
 
 	"github.com/pkg/errors"
+	"github.com/tidwall/gjson"
 	"golang.org/x/term"
 
 	"github.com/machinefi/w3bstream/pkg/depends/conf/log"
@@ -36,7 +38,7 @@ type Client interface {
 	// SelectTranslation select a translation based on UILanguage
 	SelectTranslation(map[config.Language]string) string
 	// Call http call
-	Call(url string, req *http.Request) (*http.Response, error)
+	Call(url string, req *http.Request) ([]byte, error)
 }
 
 type client struct {
@@ -71,24 +73,23 @@ func (c *client) SelectTranslation(trls map[config.Language]string) string {
 	return trl
 }
 
-type callResp struct {
-	Code uint64 `json:"code"`
-}
-
-func (c *client) Call(url string, req *http.Request) (*http.Response, error) {
+func (c *client) Call(url string, req *http.Request) ([]byte, error) {
 	resp, err := c.call(url, req, c.getToken())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to call w3bstream api")
 	}
-	cr := callResp{}
-	if err := json.NewDecoder(resp.Body).Decode(&cr); err != nil {
-		errors.Wrap(err, "failed to decode w3bstream api responce")
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
 	}
-	if cr.Code/1e6 == 401 {
-		c.login()
-		return c.call(url, req, c.getToken())
+	if gjson.ValidBytes(body) {
+		ret := gjson.ParseBytes(body)
+		if code := ret.Get("code"); code.Exists() && (code.Uint()/1e6 == 401) {
+			c.login()
+			return c.Call(url, req)
+		}
 	}
-	return resp, err
+	return body, err
 }
 
 func (c *client) call(url string, req *http.Request, token string) (*http.Response, error) {

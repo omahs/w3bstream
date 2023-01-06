@@ -22,6 +22,6 @@ func NewProjectCmd(client client.Client) *cobra.Command {
 		Short: client.SelectTranslation(_projectCmdShorts),
 	}
 	cmd.AddCommand(newProjectCreateCmd(client))
-
+	cmd.AddCommand(newProjectDeleteCmd(client))
 	return cmd
 }
