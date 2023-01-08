@@ -17,10 +17,10 @@ jobs:
             applet_mgr_name: srv-applet-mgr-linux-amd64
           - os: windows-latest
             artifact_name: pub_client-windows-amd64.exe
-            applet_mgr_name: srv-applet-mgr-windows-amd64.exe
+            applet_mgr_name: srv-applet-mgr-linux-amd64
           - os: macos-latest
             artifact_name: pub_client-darwin-amd64
-            applet_mgr_name: srv-applet-mgr-darwin-amd64
+            applet_mgr_name: srv-applet-mgr-linux-amd64
 
     steps:
       - name: Checkout code
@@ -37,7 +37,6 @@ jobs:
           set GOARCH=amd64
           go build -o ./${{ matrix.applet_mgr_name }} -v ./cmd/srv-applet-mgr
           go build -o ./${{ matrix.artifact_name }} -v ./cmd/pub_client
-
       - name: Upload srv-applet-mgr binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
@@ -63,7 +62,6 @@ jobs:
           export GPG_TTY=$(tty)
           echo "$GPG_SIGNING_KEY" | gpg --batch --import
           echo "$GPG_PASSPHRASE" | gpg --passphrase-fd 0 --pinentry-mode loopback --batch -ab ./${{ matrix.applet_mgr_name }}
-
       - name: Configure srv-applet-mgr GPG Windows
         if: startsWith(matrix.os, 'windows-latest')
         env:
@@ -72,7 +70,6 @@ jobs:
         run: |
           echo $env:GPG_SIGNING_KEY | gpg --batch --import
           gpg --passphrase "$env:GPG_PASSPHRASE" --batch --pinentry-mode loopback -ab ./${{ matrix.applet_mgr_name }}
-
       - name: Upload srv-applet-mgr signature
         uses: svenstaro/upload-release-action@v2
         with:
@@ -90,7 +87,6 @@ jobs:
           export GPG_TTY=$(tty)
           echo "$GPG_SIGNING_KEY" | gpg --batch --import
           echo "$GPG_PASSPHRASE" | gpg --passphrase-fd 0 --pinentry-mode loopback --batch -ab ./${{ matrix.artifact_name }}
-
       - name: Configure pub_client GPG Windows
         if: startsWith(matrix.os, 'windows-latest')
         env:
@@ -99,7 +95,6 @@ jobs:
         run: |
           echo $env:GPG_SIGNING_KEY | gpg --batch --import
           gpg --passphrase "$env:GPG_PASSPHRASE" --batch --pinentry-mode loopback -ab ./${{ matrix.artifact_name }}
-
       - name: Upload pub_client signature
         uses: svenstaro/upload-release-action@v2
         with:
