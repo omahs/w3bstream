@@ -12,7 +12,7 @@ func PrintResponse(cmd *cobra.Command, resp []byte) error {
 	}
 	ret := gjson.ParseBytes(resp)
 	if code := ret.Get("code"); code.Exists() && code.Uint() != 0 {
-		return errors.Errorf("error code: %d, error message: %s", code, ret.Get("desc").String())
+		return errors.Errorf("error code: %d, error message: %s", code.Uint(), ret.Get("desc").String())
 	}
 	cmd.Println(ret.Get("desc").String())
 	return nil
