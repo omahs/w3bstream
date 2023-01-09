@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/machinefi/w3bstream/pkg/wsctl/cmd/instance"
 	"github.com/spf13/cobra"
 
 	"github.com/machinefi/w3bstream/pkg/wsctl/client"
@@ -31,6 +32,7 @@ func NewWsctl(client client.Client) *cobra.Command {
 
 	rootCmd.AddCommand(cfgcmd.NewConfigCmd(client))
 	rootCmd.AddCommand(project.NewProjectCmd(client))
+	rootCmd.AddCommand(instance.NewInstanceCmd(client))
 
 	return rootCmd
 }
