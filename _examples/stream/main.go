@@ -91,9 +91,7 @@ func _groupByAge(rid uint32) int32 {
 
 	common.Log(fmt.Sprintf("get groupByAge resource all %v: `%s`", rid, string(message)))
 
-	customer := string(message)
-
-	city := gjson.Get(customer, "city").String()
+	city := gjson.GetBytes(message, "city").String()
 	common.Log(fmt.Sprintf("get groupByAge resource city %v: %s", rid, city))
 
 	common.SetDataByRID(rid, city)
