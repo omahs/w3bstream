@@ -4,34 +4,23 @@ import (
 	"encoding/binary"
 
 	"github.com/bytecodealliance/wasmtime-go"
-	"github.com/machinefi/w3bstream/pkg/types/wasm"
 	"github.com/pkg/errors"
 )
 
-type Runtime struct {
-	engine   *wasmtime.Engine
-	store    *wasmtime.Store
-	linker   *wasmtime.Linker
-	module   *wasmtime.Module
-	instance *wasmtime.Instance
+type Importer interface {
+	Import(module, name string, f interface{}) error
 }
 
-func NewRuntime(code []byte, abi wasm.ABI) (rt *Runtime, err error) {
+func NewRuntime(code []byte, lk ABILinker) (rt *Runtime, err error) {
 	rt = &Runtime{}
 	rt.engine = wasmtime.NewEngineWithConfig(wasmtime.NewConfig())
 	rt.store = wasmtime.NewStore(rt.engine)
 	rt.linker = wasmtime.NewLinker(rt.engine)
 
-	_ = rt.linker.FuncWrap("env", "ws_log", abi.Log)
-	_ = rt.linker.FuncWrap("env", "ws_get_data", abi.GetData)
-	_ = rt.linker.FuncWrap("env", "ws_set_data", abi.SetData)
-	_ = rt.linker.FuncWrap("env", "ws_get_db", abi.GetDB)
-	_ = rt.linker.FuncWrap("env", "ws_set_db", abi.SetDB)
-	_ = rt.linker.FuncWrap("env", "ws_send_tx", abi.SendTX)
-	_ = rt.linker.FuncWrap("env", "ws_call_contract", abi.CallContract)
-	_ = rt.linker.FuncWrap("env", "ws_set_sql_db", abi.SetSQLDB)
-	_ = rt.linker.FuncWrap("env", "ws_get_sql_db", abi.GetSQLDB)
-	_ = rt.linker.FuncWrap("env", "ws_get_env", abi.GetEnv)
+	if err = lk.LinkABI(rt); err != nil {
+		return nil, err
+	}
+
 	_ = rt.linker.DefineWasi()
 	rt.store.SetWasi(wasmtime.NewWasiConfig())
 
@@ -46,8 +35,20 @@ func NewRuntime(code []byte, abi wasm.ABI) (rt *Runtime, err error) {
 	return
 }
 
+type Runtime struct {
+	engine   *wasmtime.Engine
+	store    *wasmtime.Store
+	linker   *wasmtime.Linker
+	module   *wasmtime.Module
+	instance *wasmtime.Instance
+}
+
 func (rt *Runtime) NewMemory() []byte {
 	return rt.instance.GetExport(rt.store, "memory").Memory().UnsafeData(rt.store)
+}
+
+func (rt *Runtime) Import(module, name string, fn interface{}) error {
+	return rt.linker.FuncWrap(module, name, fn)
 }
 
 func (rt *Runtime) Alloc(size int32) (int32, []byte, error) {

@@ -30,7 +30,7 @@ func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte) (i *Inst
 	}
 
 	return &Instance{
-		ef:       ef,
+		rt:       ef.rt,
 		id:       id,
 		state:    enums.INSTANCE_STATE__CREATED,
 		res:      res,
@@ -41,7 +41,7 @@ func NewInstanceByCode(ctx context.Context, id types.SFID, code []byte) (i *Inst
 
 type Instance struct {
 	id       types.SFID
-	ef       *ExportFuncs
+	rt       *Runtime
 	state    wasm.InstanceState
 	res      *mapx.Map[uint32, []byte]
 	handlers map[string]*wasmtime.Func
@@ -89,7 +89,7 @@ func (i *Instance) Handle(ctx context.Context, t *Task) *wasm.EventHandleResult 
 	rid := i.AddResource(ctx, t.Payload)
 	defer i.RmvResource(ctx, rid)
 
-	result, err := i.ef.Call(t.Handler, int32(rid))
+	result, err := i.rt.Call(t.Handler, int32(rid))
 	if err != nil {
 		l.Error(err)
 		return &wasm.EventHandleResult{

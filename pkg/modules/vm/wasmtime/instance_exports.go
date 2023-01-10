@@ -21,26 +21,31 @@ const (
 	logErrorLevel
 )
 
+type ABILinker interface {
+	LinkABI(Importer) error
+}
+
 func NewExportFuncs(ctx context.Context, code []byte) (*ExportFuncs, error) {
-	ef := &ExportFuncs{}
+	ef := &ExportFuncs{
+		res: wasm.MustRuntimeResourceFromContext(ctx),
+		kvs: wasm.MustKVStoreFromContext(ctx),
+		db:  wasm.MustDBExecutorFromContext(ctx),
+		log: wasm.MustLoggerFromContext(ctx),
+		env: wasm.MustEnvFromContext(ctx),
+	}
+	ef.cl, _ = wasm.ChainClientFromContext(ctx)
 
 	rt, err := NewRuntime(code, ef)
 	if err != nil {
 		return nil, err
 	}
-	ef.Runtime = rt
-	ef.res = wasm.MustRuntimeResourceFromContext(ctx)
-	ef.kvs = wasm.MustKVStoreFromContext(ctx)
-	ef.db = wasm.MustDBExecutorFromContext(ctx)
-	ef.log = wasm.MustLoggerFromContext(ctx)
-	ef.env = wasm.MustEnvFromContext(ctx)
-	ef.cl, _ = wasm.ChainClientFromContext(ctx)
+	ef.rt = rt
 
 	return ef, nil
 }
 
 type ExportFuncs struct {
-	*Runtime
+	rt  *Runtime
 	res *mapx.Map[uint32, []byte]
 	env *wasm.Env
 	kvs wasm.KVStore
@@ -51,8 +56,22 @@ type ExportFuncs struct {
 
 var _ wasm.ABI = (*ExportFuncs)(nil)
 
+func (ef *ExportFuncs) LinkABI(fw Importer) error {
+	_ = fw.Import("env", "ws_log", ef.Log)
+	_ = fw.Import("env", "ws_get_data", ef.GetData)
+	_ = fw.Import("env", "ws_set_data", ef.SetData)
+	_ = fw.Import("env", "ws_get_db", ef.GetDB)
+	_ = fw.Import("env", "ws_set_db", ef.SetDB)
+	_ = fw.Import("env", "ws_send_tx", ef.SendTX)
+	_ = fw.Import("env", "ws_call_contract", ef.CallContract)
+	_ = fw.Import("env", "ws_set_sql_db", ef.SetSQLDB)
+	_ = fw.Import("env", "ws_get_sql_db", ef.GetSQLDB)
+	_ = fw.Import("env", "ws_get_env", ef.GetEnv)
+	return nil
+}
+
 func (ef *ExportFuncs) Log(logLevel, ptr, size int32) int32 {
-	buf, err := ef.Read(ptr, size)
+	buf, err := ef.rt.Read(ptr, size)
 	if err != nil {
 		ef.log.Error(err)
 		return wasm.ResultStatusCode_Failed
@@ -80,7 +99,7 @@ func (ef *ExportFuncs) GetData(rid, vmAddrPtr, vmSizePtr int32) int32 {
 		return int32(wasm.ResultStatusCode_ResourceNotFound)
 	}
 
-	if err := ef.Copy(data, vmAddrPtr, vmSizePtr); err != nil {
+	if err := ef.rt.Copy(data, vmAddrPtr, vmSizePtr); err != nil {
 		ef.log.Error(err)
 		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
 	}
@@ -90,7 +109,7 @@ func (ef *ExportFuncs) GetData(rid, vmAddrPtr, vmSizePtr int32) int32 {
 
 // TODO SetData if rid not exist, should be assigned by wasm?
 func (ef *ExportFuncs) SetData(rid, addr, size int32) int32 {
-	buf, err := ef.Read(addr, size)
+	buf, err := ef.rt.Read(addr, size)
 	if err != nil {
 		ef.log.Error(err)
 		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
@@ -100,7 +119,7 @@ func (ef *ExportFuncs) SetData(rid, addr, size int32) int32 {
 }
 
 func (ef *ExportFuncs) GetDB(kAddr, kSize int32, vmAddrPtr, vmSizePtr int32) int32 {
-	key, err := ef.Read(kAddr, kSize)
+	key, err := ef.rt.Read(kAddr, kSize)
 	if err != nil {
 		ef.log.Error(err)
 		return int32(wasm.ResultStatusCode_ResourceNotFound)
@@ -113,7 +132,7 @@ func (ef *ExportFuncs) GetDB(kAddr, kSize int32, vmAddrPtr, vmSizePtr int32) int
 
 	ef.log.WithValues("key", string(key), "val", string(val)).Info("host.GetDB")
 
-	if err := ef.Copy(val, vmAddrPtr, vmSizePtr); err != nil {
+	if err := ef.rt.Copy(val, vmAddrPtr, vmSizePtr); err != nil {
 		ef.log.Error(err)
 		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
 	}
@@ -122,12 +141,12 @@ func (ef *ExportFuncs) GetDB(kAddr, kSize int32, vmAddrPtr, vmSizePtr int32) int
 }
 
 func (ef *ExportFuncs) SetDB(kAddr, kSize, vAddr, vSize int32) int32 {
-	key, err := ef.Read(kAddr, kSize)
+	key, err := ef.rt.Read(kAddr, kSize)
 	if err != nil {
 		ef.log.Error(err)
 		return int32(wasm.ResultStatusCode_ResourceNotFound)
 	}
-	val, err := ef.Read(vAddr, vSize)
+	val, err := ef.rt.Read(vAddr, vSize)
 	if err != nil {
 		ef.log.Error(err)
 		return int32(wasm.ResultStatusCode_ResourceNotFound)
@@ -143,7 +162,7 @@ func (ef *ExportFuncs) SetDB(kAddr, kSize, vAddr, vSize int32) int32 {
 }
 
 func (ef *ExportFuncs) SetSQLDB(addr, size int32) int32 {
-	data, err := ef.Read(addr, size)
+	data, err := ef.rt.Read(addr, size)
 	if err != nil {
 		ef.log.Error(err)
 		return int32(wasm.ResultStatusCode_ResourceNotFound)
@@ -165,7 +184,7 @@ func (ef *ExportFuncs) SetSQLDB(addr, size int32) int32 {
 }
 
 func (ef *ExportFuncs) GetSQLDB(addr, size int32, vmAddrPtr, vmSizePtr int32) int32 {
-	data, err := ef.Read(addr, size)
+	data, err := ef.rt.Read(addr, size)
 	if err != nil {
 		ef.log.Error(err)
 		return int32(wasm.ResultStatusCode_ResourceNotFound)
@@ -189,7 +208,7 @@ func (ef *ExportFuncs) GetSQLDB(addr, size int32, vmAddrPtr, vmSizePtr int32) in
 		return wasm.ResultStatusCode_Failed
 	}
 
-	if err := ef.Copy(ret, vmAddrPtr, vmSizePtr); err != nil {
+	if err := ef.rt.Copy(ret, vmAddrPtr, vmSizePtr); err != nil {
 		ef.log.Error(err)
 		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
 	}
@@ -204,7 +223,7 @@ func (ef *ExportFuncs) SendTX(offset, size int32) int32 {
 		ef.log.Error(errors.New("eth client doesn't exist"))
 		return wasm.ResultStatusCode_Failed
 	}
-	buf, err := ef.Read(offset, size)
+	buf, err := ef.rt.Read(offset, size)
 	if err != nil {
 		ef.log.Error(err)
 		return wasm.ResultStatusCode_Failed
@@ -225,7 +244,7 @@ func (ef *ExportFuncs) CallContract(offset, size int32, vmAddrPtr, vmSizePtr int
 		ef.log.Error(errors.New("eth client doesn't exist"))
 		return wasm.ResultStatusCode_Failed
 	}
-	buf, err := ef.Read(offset, size)
+	buf, err := ef.rt.Read(offset, size)
 	if err != nil {
 		ef.log.Error(err)
 		return wasm.ResultStatusCode_Failed
@@ -237,7 +256,7 @@ func (ef *ExportFuncs) CallContract(offset, size int32, vmAddrPtr, vmSizePtr int
 		ef.log.Error(err)
 		return wasm.ResultStatusCode_Failed
 	}
-	if err = ef.Copy(data, vmAddrPtr, vmSizePtr); err != nil {
+	if err = ef.rt.Copy(data, vmAddrPtr, vmSizePtr); err != nil {
 		ef.log.Error(err)
 		return wasm.ResultStatusCode_Failed
 	}
@@ -245,7 +264,7 @@ func (ef *ExportFuncs) CallContract(offset, size int32, vmAddrPtr, vmSizePtr int
 }
 
 func (ef *ExportFuncs) GetEnv(kAddr, kSize int32, vmAddrPtr, vmSizePtr int32) int32 {
-	key, err := ef.Read(kAddr, kSize)
+	key, err := ef.rt.Read(kAddr, kSize)
 	if err != nil {
 		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
 	}
@@ -255,7 +274,7 @@ func (ef *ExportFuncs) GetEnv(kAddr, kSize int32, vmAddrPtr, vmSizePtr int32) in
 		return int32(wasm.ResultStatusCode_EnvKeyNotFound)
 	}
 
-	if err = ef.Copy([]byte(val), vmAddrPtr, vmSizePtr); err != nil {
+	if err = ef.rt.Copy([]byte(val), vmAddrPtr, vmSizePtr); err != nil {
 		ef.log.Error(err)
 		return int32(wasm.ResultStatusCode_TransDataToVMFailed)
 	}
