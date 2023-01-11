@@ -29,11 +29,11 @@ func NewExportFuncs(ctx context.Context, code []byte) (*ExportFuncs, error) {
 	ef := &ExportFuncs{
 		res: wasm.MustRuntimeResourceFromContext(ctx),
 		kvs: wasm.MustKVStoreFromContext(ctx),
-		db:  wasm.MustDBExecutorFromContext(ctx),
 		log: wasm.MustLoggerFromContext(ctx),
 		env: wasm.MustEnvFromContext(ctx),
 	}
 	ef.cl, _ = wasm.ChainClientFromContext(ctx)
+	ef.db, _ = wasm.DBExecutorFromContext(ctx)
 
 	rt, err := NewRuntime(code, ef)
 	if err != nil {
