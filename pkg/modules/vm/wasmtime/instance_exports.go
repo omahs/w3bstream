@@ -30,10 +30,10 @@ func NewExportFuncs(ctx context.Context, code []byte) (*ExportFuncs, error) {
 		res: wasm.MustRuntimeResourceFromContext(ctx),
 		kvs: wasm.MustKVStoreFromContext(ctx),
 		log: wasm.MustLoggerFromContext(ctx),
-		env: wasm.MustEnvFromContext(ctx),
 	}
 	ef.cl, _ = wasm.ChainClientFromContext(ctx)
 	ef.db, _ = wasm.DBExecutorFromContext(ctx)
+	ef.env, _ = wasm.EnvFromContext(ctx)
 
 	rt, err := NewRuntime(code, ef)
 	if err != nil {
@@ -162,6 +162,9 @@ func (ef *ExportFuncs) SetDB(kAddr, kSize, vAddr, vSize int32) int32 {
 }
 
 func (ef *ExportFuncs) SetSQLDB(addr, size int32) int32 {
+	if ef.db == nil {
+		return int32(wasm.ResultStatusCode_NoDBContext)
+	}
 	data, err := ef.rt.Read(addr, size)
 	if err != nil {
 		ef.log.Error(err)
@@ -184,6 +187,9 @@ func (ef *ExportFuncs) SetSQLDB(addr, size int32) int32 {
 }
 
 func (ef *ExportFuncs) GetSQLDB(addr, size int32, vmAddrPtr, vmSizePtr int32) int32 {
+	if ef.db == nil {
+		return int32(wasm.ResultStatusCode_NoDBContext)
+	}
 	data, err := ef.rt.Read(addr, size)
 	if err != nil {
 		ef.log.Error(err)
@@ -264,6 +270,9 @@ func (ef *ExportFuncs) CallContract(offset, size int32, vmAddrPtr, vmSizePtr int
 }
 
 func (ef *ExportFuncs) GetEnv(kAddr, kSize int32, vmAddrPtr, vmSizePtr int32) int32 {
+	if ef.env == nil {
+		return int32(wasm.ResultStatusCode_EnvKeyNotFound)
+	}
 	key, err := ef.rt.Read(kAddr, kSize)
 	if err != nil {
 		return int32(wasm.ResultStatusCode_TransDataToVMFailed)

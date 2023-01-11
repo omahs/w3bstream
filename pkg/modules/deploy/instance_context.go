@@ -31,6 +31,7 @@ func WithInstanceRuntimeContext(parent context.Context) (context.Context, error)
 	}
 	ctx = types.WithProject(ctx, prj)
 	ctx = wasm.WithEnvPrefix(ctx, prj.Name)
+	ctx = wasm.WithRedisPrefix(ctx, prj.Name)
 	res := &models.Resource{RelResource: models.RelResource{ResourceID: app.ResourceID}}
 	if err := res.FetchByResourceID(d); err != nil {
 		return nil, err
@@ -46,9 +47,6 @@ func WithInstanceRuntimeContext(parent context.Context) (context.Context, error)
 	}
 	if _, ok := wasm.KVStoreFromContext(ctx); !ok {
 		ctx = wasm.DefaultCache().WithContext(ctx)
-	}
-	if _, ok := wasm.EnvFromContext(ctx); !ok {
-		ctx = wasm.NewEvn(prj.Name).WithContext(ctx)
 	}
 	ctx = wasm.WithLogger(ctx, types.MustLoggerFromContext(ctx).WithValues(
 		"@src", "wasm",
