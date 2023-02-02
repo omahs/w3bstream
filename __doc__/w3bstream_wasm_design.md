@@ -2,7 +2,7 @@
 
 ### Rational
 
-Several programming models is proposed for w3bStream
+Several programming models are proposed for w3bStream
 
 1. Data In Data Out
 
@@ -13,7 +13,7 @@ fn main(data_ptr *i32, data_size i32) -> i32 {
 }
 ```
 
-In this model, wasm acts as a streaming data handler. It is straightforward to pass a input data in and return the filtered data from the func.
+In this model, wasm acts as a streaming data handler. It is straightforward to pass an input data in and return the filtered data from the func.
 
 2. Struct Wrapper
 
